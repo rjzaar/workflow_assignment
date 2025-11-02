@@ -89,4 +89,23 @@ class WorkflowListWidget extends OptionsButtonsWidget {
     return $element;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function massageFormValues(array $values, array $form, FormStateInterface $form_state) {
+    // Filter out unchecked checkboxes (value = 0)
+    // Checkboxes return 0 for unchecked, but entity reference fields
+    // expect only valid entity IDs or NULL
+    $filtered = [];
+    
+    foreach ($values as $value) {
+      // Check if target_id exists and is not 0 or empty
+      if (isset($value['target_id']) && $value['target_id'] !== 0 && $value['target_id'] !== '0' && !empty($value['target_id'])) {
+        $filtered[] = $value;
+      }
+    }
+    
+    return $filtered;
+  }
+
 }

@@ -5,6 +5,7 @@ namespace Drupal\workflow_assignment;
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Url;
+use Drupal\Component\Utility\Unicode;
 
 /**
  * Provides a listing of Workflow Lists.
@@ -33,7 +34,7 @@ class WorkflowListListBuilder extends ConfigEntityListBuilder {
     
     // Description (truncated).
     $description = $entity->getDescription();
-    $row['description'] = $description ? \Drupal::service('text.truncate')->truncate($description, 60) : '-';
+    $row['description'] = $description ? Unicode::truncate($description, 60, TRUE, TRUE) : '-';
     
     // User count.
     $users = $entity->getAssignedUsers();

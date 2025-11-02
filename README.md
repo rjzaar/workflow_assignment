@@ -2,6 +2,8 @@
 
 A custom Drupal 10+ module that provides a flexible workflow system with dedicated workflow tabs and destination location support.
 
+![Tests](https://github.com/rjzaar/workflow_assignment/workflows/Tests/badge.svg)
+
 ## 🆕 NEW FEATURES IN THIS IMPROVED VERSION
 
 ### 1. **Dedicated Workflow Tab**

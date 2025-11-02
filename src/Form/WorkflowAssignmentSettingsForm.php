@@ -138,8 +138,11 @@ class WorkflowAssignmentSettingsForm extends ConfigFormBase {
       $field_storage = $field_storage_config->create([
         'field_name' => 'field_workflow_list',
         'entity_type' => 'node',
-        'type' => 'string',
+        'type' => 'entity_reference',
         'cardinality' => -1, // Unlimited - allow multiple workflows
+        'settings' => [
+          'target_type' => 'workflow_list',
+        ],
       ]);
       $field_storage->save();
     }
@@ -159,6 +162,10 @@ class WorkflowAssignmentSettingsForm extends ConfigFormBase {
             'bundle' => $type,
             'label' => 'Workflow List',
             'required' => FALSE,
+            'settings' => [
+              'handler' => 'default:workflow_list',
+              'handler_settings' => [],
+            ],
           ]);
           $field->save();
 
@@ -167,23 +174,41 @@ class WorkflowAssignmentSettingsForm extends ConfigFormBase {
             ->getStorage('entity_form_display')
             ->load("node.{$type}.default");
           
-          if ($form_display) {
-            $form_display->setComponent('field_workflow_list', [
-              'type' => 'workflow_list_widget',
-              'weight' => 100,
-              'settings' => [],
-            ])->save();
+          if (!$form_display) {
+            $form_display = $this->entityTypeManager
+              ->getStorage('entity_form_display')
+              ->create([
+                'targetEntityType' => 'node',
+                'bundle' => $type,
+                'mode' => 'default',
+                'status' => TRUE,
+              ]);
           }
+          
+          $form_display->setComponent('field_workflow_list', [
+            'type' => 'options_buttons',  // Use checkboxes for entity reference
+            'weight' => 100,
+            'settings' => [],
+          ])->save();
 
           // Set view display - HIDE the field (only show on workflow tab)
           $view_display = $this->entityTypeManager
             ->getStorage('entity_view_display')
             ->load("node.{$type}.default");
           
-          if ($view_display) {
-            // Remove the field from display - we only show it on the workflow tab
-            $view_display->removeComponent('field_workflow_list')->save();
+          if (!$view_display) {
+            $view_display = $this->entityTypeManager
+              ->getStorage('entity_view_display')
+              ->create([
+                'targetEntityType' => 'node',
+                'bundle' => $type,
+                'mode' => 'default',
+                'status' => TRUE,
+              ]);
           }
+          
+          // Remove the field from display - we only show it on the workflow tab
+          $view_display->removeComponent('field_workflow_list')->save();
         }
       }
       else {

@@ -87,8 +87,9 @@ class NodeAssignWorkflowForm extends FormBase {
     $current_workflows = [];
     if ($node->hasField('field_workflow_list')) {
       foreach ($node->get('field_workflow_list') as $item) {
-        if (!empty($item->value)) {
-          $current_workflows[] = $item->value;
+        // For entity reference field, get the target_id
+        if (!empty($item->target_id)) {
+          $current_workflows[$item->target_id] = $item->target_id;
         }
       }
     }

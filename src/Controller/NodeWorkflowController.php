@@ -62,21 +62,16 @@ class NodeWorkflowController extends ControllerBase {
    */
   public function workflowTab(NodeInterface $node) {
     // Get all assigned workflows
-    $workflow_ids = [];
+    $workflows = [];
     if ($node->hasField('field_workflow_list')) {
-      foreach ($node->get('field_workflow_list') as $item) {
-        if (!empty($item->value)) {
-          $workflow_ids[] = $item->value;
+      $field_items = $node->get('field_workflow_list');
+      foreach ($field_items as $item) {
+        // For entity reference field, get the target entity
+        $workflow = $item->entity;
+        if ($workflow) {
+          $workflows[] = $workflow;
         }
       }
-    }
-
-    $workflows = [];
-    if (!empty($workflow_ids)) {
-      // Load all workflows
-      $workflows = $this->entityTypeManager
-        ->getStorage('workflow_list')
-        ->loadMultiple($workflow_ids);
     }
 
     $can_edit = $this->currentUser()->hasPermission('assign workflow lists to content');

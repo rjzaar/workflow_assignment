@@ -136,11 +136,63 @@ function workflow_assignment_update_9002() {
   $field_storage = $field_storage_config->load('node.field_workflow_list');
   
   if ($field_storage) {
-    // Update cardinality to unlimited
-    $field_storage->setCardinality(-1);
-    $field_storage->save();
-    
-    return t('Workflow field updated to allow multiple assignments.');
+    // Delete old string field if it exists
+    if ($field_storage->getType() === 'string') {
+      // Store any existing data first
+      $existing_data = [];
+      $node_storage = \Drupal::entityTypeManager()->getStorage('node');
+      $query = $node_storage->getQuery()
+        ->exists('field_workflow_list')
+        ->accessCheck(FALSE);
+      $nids = $query->execute();
+      
+      foreach ($nids as $nid) {
+        $node = $node_storage->load($nid);
+        if ($node && $node->hasField('field_workflow_list')) {
+          $values = [];
+          foreach ($node->get('field_workflow_list') as $item) {
+            if (!empty($item->value)) {
+              $values[] = $item->value;
+            }
+          }
+          if (!empty($values)) {
+            $existing_data[$nid] = $values;
+          }
+        }
+      }
+      
+      // Delete the old field storage
+      $field_storage->delete();
+      
+      // Create new entity reference field storage
+      $field_storage = $field_storage_config->create([
+        'field_name' => 'field_workflow_list',
+        'entity_type' => 'node',
+        'type' => 'entity_reference',
+        'cardinality' => -1,
+        'settings' => [
+          'target_type' => 'workflow_list',
+        ],
+      ]);
+      $field_storage->save();
+      
+      // Restore data to new field
+      foreach ($existing_data as $nid => $workflow_ids) {
+        $node = $node_storage->load($nid);
+        if ($node && $node->hasField('field_workflow_list')) {
+          $node->set('field_workflow_list', $workflow_ids);
+          $node->save();
+        }
+      }
+      
+      return t('Workflow field updated to entity reference type.');
+    }
+    else {
+      // Just update cardinality if already entity reference
+      $field_storage->setCardinality(-1);
+      $field_storage->save();
+      return t('Workflow field cardinality updated.');
+    }
   }
   
   return t('Workflow field storage not found.');

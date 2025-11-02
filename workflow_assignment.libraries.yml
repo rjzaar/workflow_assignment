@@ -3,5 +3,9 @@ workflow_tab:
   css:
     theme:
       css/workflow-tab.css: {}
+  js:
+    js/workflow-tab.js: {}
   dependencies:
+    - core/jquery
+    - core/jquery.once
     - core/drupal

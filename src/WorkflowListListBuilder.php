@@ -44,8 +44,8 @@ class WorkflowListListBuilder extends ConfigEntityListBuilder {
     $header['label'] = $this->t('Name');
     $header['id'] = $this->t('Machine name');
     $header['description'] = $this->t('Description');
-    $header['users'] = $this->t('Users');
-    $header['destinations'] = $this->t('Destinations');
+    $header['assigned'] = $this->t('Assigned');
+    $header['comments'] = $this->t('Comments');
     return $header + parent::buildHeader();
   }
 
@@ -59,28 +59,32 @@ class WorkflowListListBuilder extends ConfigEntityListBuilder {
     
     // Description (truncated).
     $description = $entity->getDescription();
-    $row['description'] = $description ? Unicode::truncate($description, 60, TRUE, TRUE) : '-';
+    $row['description'] = $description ? Unicode::truncate($description, 40, TRUE, TRUE) : '-';
     
-    // User count.
-    $users = $entity->getAssignedUsers();
-    $row['users'] = count($users) . ' ' . $this->formatPlural(count($users), 'user', 'users');
+    // Assigned entity with type indicator
+    $assigned_label = $entity->getAssignedLabel();
+    $assigned_type = $entity->getAssignedType();
     
-    // Destination locations.
-    $destinations = $entity->getDestinationTags();
-    if (!empty($destinations)) {
-      $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
-      $destination_names = [];
-      foreach ($destinations as $tid) {
-        $term = $term_storage->load($tid);
-        if ($term) {
-          $destination_names[] = $term->getName();
-        }
-      }
-      $row['destinations'] = implode(', ', $destination_names);
+    if ($assigned_label && $assigned_type) {
+      $type_labels = [
+        'user' => $this->t('User'),
+        'group' => $this->t('Group'),
+        'destination' => $this->t('Destination'),
+      ];
+      
+      $type_label = isset($type_labels[$assigned_type]) ? $type_labels[$assigned_type] : $assigned_type;
+      $row['assigned'] = $this->t('@type: @label', [
+        '@type' => $type_label,
+        '@label' => $assigned_label,
+      ]);
     }
     else {
-      $row['destinations'] = '-';
+      $row['assigned'] = '-';
     }
+    
+    // Comments (truncated)
+    $comments = $entity->getComments();
+    $row['comments'] = $comments ? Unicode::truncate($comments, 30, TRUE, TRUE) : '-';
     
     return $row + parent::buildRow($entity);
   }

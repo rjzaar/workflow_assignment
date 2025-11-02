@@ -43,10 +43,9 @@ use Drupal\Core\Entity\EntityStorageInterface;
  *     "id",
  *     "label",
  *     "description",
- *     "assigned_users",
- *     "assigned_groups",
- *     "resource_tags",
- *     "destination_tags",
+ *     "assigned_type",
+ *     "assigned_id",
+ *     "comments",
  *     "created",
  *     "changed"
  *   }
@@ -76,32 +75,25 @@ class WorkflowList extends ConfigEntityBase {
   protected $description;
 
   /**
-   * Array of assigned user IDs.
+   * The assigned entity type (user, group, or destination).
    *
-   * @var array
+   * @var string
    */
-  protected $assigned_users = [];
+  protected $assigned_type;
 
   /**
-   * Array of assigned group IDs.
+   * The assigned entity ID.
    *
-   * @var array
+   * @var int|string
    */
-  protected $assigned_groups = [];
+  protected $assigned_id;
 
   /**
-   * Array of resource location term IDs.
+   * Comments for the workflow.
    *
-   * @var array
+   * @var string
    */
-  protected $resource_tags = [];
-
-  /**
-   * Array of destination location term IDs.
-   *
-   * @var array
-   */
-  protected $destination_tags = [];
+  protected $comments;
 
   /**
    * The creation timestamp.
@@ -154,192 +146,100 @@ class WorkflowList extends ConfigEntityBase {
   }
 
   /**
-   * Gets assigned users.
+   * Gets the assigned entity type.
+   *
+   * @return string
+   *   The assigned entity type (user, group, or destination).
+   */
+  public function getAssignedType() {
+    return $this->assigned_type;
+  }
+
+  /**
+   * Sets the assigned entity type.
+   *
+   * @param string $type
+   *   The assigned entity type.
+   *
+   * @return $this
+   */
+  public function setAssignedType($type) {
+    $this->assigned_type = $type;
+    return $this;
+  }
+
+  /**
+   * Gets the assigned entity ID.
+   *
+   * @return int|string
+   *   The assigned entity ID.
+   */
+  public function getAssignedId() {
+    return $this->assigned_id;
+  }
+
+  /**
+   * Sets the assigned entity ID.
+   *
+   * @param int|string $id
+   *   The assigned entity ID.
+   *
+   * @return $this
+   */
+  public function setAssignedId($id) {
+    $this->assigned_id = $id;
+    return $this;
+  }
+
+  /**
+   * Gets the assignment as an array with type and ID.
    *
    * @return array
-   *   Array of user IDs.
+   *   Array with 'type' and 'id' keys.
    */
-  public function getAssignedUsers() {
-    return $this->assigned_users ?: [];
+  public function getAssignment() {
+    return [
+      'type' => $this->assigned_type,
+      'id' => $this->assigned_id,
+    ];
   }
 
   /**
-   * Sets assigned users.
+   * Sets the assignment.
    *
-   * @param array $users
-   *   Array of user IDs.
+   * @param string $type
+   *   The entity type (user, group, or destination).
+   * @param int|string $id
+   *   The entity ID.
    *
    * @return $this
    */
-  public function setAssignedUsers(array $users) {
-    $this->assigned_users = array_values(array_unique(array_filter($users)));
+  public function setAssignment($type, $id) {
+    $this->assigned_type = $type;
+    $this->assigned_id = $id;
     return $this;
   }
 
   /**
-   * Adds a user to the workflow.
+   * Gets the comments.
    *
-   * @param int $uid
-   *   The user ID.
+   * @return string
+   *   The comments.
+   */
+  public function getComments() {
+    return $this->comments;
+  }
+
+  /**
+   * Sets the comments.
+   *
+   * @param string $comments
+   *   The comments.
    *
    * @return $this
    */
-  public function addAssignedUser($uid) {
-    $users = $this->getAssignedUsers();
-    if (!in_array($uid, $users)) {
-      $users[] = $uid;
-      $this->setAssignedUsers($users);
-    }
-    return $this;
-  }
-
-  /**
-   * Removes a user from the workflow.
-   *
-   * @param int $uid
-   *   The user ID.
-   *
-   * @return $this
-   */
-  public function removeAssignedUser($uid) {
-    $users = $this->getAssignedUsers();
-    $users = array_diff($users, [$uid]);
-    $this->setAssignedUsers($users);
-    return $this;
-  }
-
-  /**
-   * Gets assigned groups.
-   *
-   * @return array
-   *   Array of group IDs.
-   */
-  public function getAssignedGroups() {
-    return $this->assigned_groups ?: [];
-  }
-
-  /**
-   * Sets assigned groups.
-   *
-   * @param array $groups
-   *   Array of group IDs.
-   *
-   * @return $this
-   */
-  public function setAssignedGroups(array $groups) {
-    $this->assigned_groups = array_values(array_unique(array_filter($groups)));
-    return $this;
-  }
-
-  /**
-   * Adds a group to the workflow.
-   *
-   * @param int $gid
-   *   The group ID.
-   *
-   * @return $this
-   */
-  public function addAssignedGroup($gid) {
-    $groups = $this->getAssignedGroups();
-    if (!in_array($gid, $groups)) {
-      $groups[] = $gid;
-      $this->setAssignedGroups($groups);
-    }
-    return $this;
-  }
-
-  /**
-   * Removes a group from the workflow.
-   *
-   * @param int $gid
-   *   The group ID.
-   *
-   * @return $this
-   */
-  public function removeAssignedGroup($gid) {
-    $groups = $this->getAssignedGroups();
-    $groups = array_diff($groups, [$gid]);
-    $this->setAssignedGroups($groups);
-    return $this;
-  }
-
-  /**
-   * Gets resource tags.
-   *
-   * @return array
-   *   Array of term IDs.
-   */
-  public function getResourceTags() {
-    return $this->resource_tags ?: [];
-  }
-
-  /**
-   * Sets resource tags.
-   *
-   * @param array $tags
-   *   Array of term IDs.
-   *
-   * @return $this
-   */
-  public function setResourceTags(array $tags) {
-    $this->resource_tags = array_values(array_unique(array_filter($tags)));
-    return $this;
-  }
-
-  /**
-   * Adds a resource tag.
-   *
-   * @param int $tid
-   *   The term ID.
-   *
-   * @return $this
-   */
-  public function addResourceTag($tid) {
-    $tags = $this->getResourceTags();
-    if (!in_array($tid, $tags)) {
-      $tags[] = $tid;
-      $this->setResourceTags($tags);
-    }
-    return $this;
-  }
-
-  /**
-   * Gets destination tags.
-   *
-   * @return array
-   *   Array of destination term IDs.
-   */
-  public function getDestinationTags() {
-    return $this->destination_tags ?: [];
-  }
-
-  /**
-   * Sets destination tags.
-   *
-   * @param array $tags
-   *   Array of destination term IDs.
-   *
-   * @return $this
-   */
-  public function setDestinationTags(array $tags) {
-    $this->destination_tags = array_values(array_unique(array_filter($tags)));
-    return $this;
-  }
-
-  /**
-   * Adds a destination tag.
-   *
-   * @param int $tid
-   *   The term ID.
-   *
-   * @return $this
-   */
-  public function addDestinationTag($tid) {
-    $tags = $this->getDestinationTags();
-    if (!in_array($tid, $tags)) {
-      $tags[] = $tid;
-      $this->setDestinationTags($tags);
-    }
+  public function setComments($comments) {
+    $this->comments = $comments;
     return $this;
   }
 
@@ -361,6 +261,40 @@ class WorkflowList extends ConfigEntityBase {
    */
   public function getChangedTime() {
     return $this->changed;
+  }
+
+  /**
+   * Gets the label of the assigned entity.
+   *
+   * @return string
+   *   The label of the assigned entity.
+   */
+  public function getAssignedLabel() {
+    if (empty($this->assigned_type) || empty($this->assigned_id)) {
+      return '';
+    }
+
+    $entity_type_manager = \Drupal::entityTypeManager();
+    
+    switch ($this->assigned_type) {
+      case 'user':
+        $user = $entity_type_manager->getStorage('user')->load($this->assigned_id);
+        return $user ? $user->getDisplayName() : '';
+      
+      case 'group':
+        if (\Drupal::moduleHandler()->moduleExists('group')) {
+          $group = $entity_type_manager->getStorage('group')->load($this->assigned_id);
+          return $group ? $group->label() : '';
+        }
+        return '';
+      
+      case 'destination':
+        $term = $entity_type_manager->getStorage('taxonomy_term')->load($this->assigned_id);
+        return $term ? $term->getName() : '';
+      
+      default:
+        return '';
+    }
   }
 
 }

@@ -6,14 +6,6 @@ workflow_assignment.settings:
   requirements:
     _permission: 'administer workflow lists'
 
-workflow_assignment.destination_settings:
-  path: '/admin/config/workflow/workflow-assignment/destinations'
-  defaults:
-    _form: '\Drupal\workflow_assignment\Form\DestinationLocationSettingsForm'
-    _title: 'Destination Location Settings'
-  requirements:
-    _permission: 'administer workflow lists'
-
 entity.workflow_list.collection:
   path: '/admin/structure/workflow-list'
   defaults:

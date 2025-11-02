@@ -8,9 +8,6 @@ workflow_assignment.settings:
       sequence:
         type: string
         label: 'Content type'
-    resource_vocabulary:
-      type: string
-      label: 'Resource location vocabulary'
     destination_vocabulary:
       type: string
       label: 'Destination location vocabulary'
@@ -31,30 +28,15 @@ workflow_assignment.workflow_list.*:
     description:
       type: text
       label: 'Description'
-    assigned_users:
-      type: sequence
-      label: 'Assigned users'
-      sequence:
-        type: integer
-        label: 'User ID'
-    assigned_groups:
-      type: sequence
-      label: 'Assigned groups'
-      sequence:
-        type: integer
-        label: 'Group ID'
-    resource_tags:
-      type: sequence
-      label: 'Resource location tags'
-      sequence:
-        type: integer
-        label: 'Term ID'
-    destination_tags:
-      type: sequence
-      label: 'Destination location tags'
-      sequence:
-        type: integer
-        label: 'Term ID'
+    assigned_type:
+      type: string
+      label: 'Assigned entity type'
+    assigned_id:
+      type: string
+      label: 'Assigned entity ID'
+    comments:
+      type: text
+      label: 'Comments'
     created:
       type: timestamp
       label: 'Created timestamp'

@@ -75,25 +75,18 @@ class WorkflowListWidget extends WidgetBase implements ContainerFactoryPluginInt
 
     $options = [];
     foreach ($workflows as $workflow) {
-      $description_parts = [$workflow->label()];
+      $assigned = $workflow->getAssignedLabel();
+      $type = $workflow->getAssignedType();
       
-      // Add destination info to option label.
-      $destinations = $workflow->getDestinationTags();
-      if (!empty($destinations)) {
-        $term_storage = $this->entityTypeManager->getStorage('taxonomy_term');
-        $destination_names = [];
-        foreach ($destinations as $tid) {
-          $term = $term_storage->load($tid);
-          if ($term) {
-            $destination_names[] = $term->getName();
-          }
-        }
-        if (!empty($destination_names)) {
-          $description_parts[] = '(' . implode(', ', $destination_names) . ')';
-        }
-      }
+      $type_labels = [
+        'user' => 'User',
+        'group' => 'Group',
+        'destination' => 'Dest',
+      ];
       
-      $options[$workflow->id()] = implode(' ', $description_parts);
+      $type_label = isset($type_labels[$type]) ? $type_labels[$type] : $type;
+      
+      $options[$workflow->id()] = $workflow->label() . ' (' . $type_label . ': ' . $assigned . ')';
     }
 
     // Get all current values for multi-value field

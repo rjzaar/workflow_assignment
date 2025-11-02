@@ -1,11 +1,11 @@
 {#
 /**
  * @file
- * Template for displaying workflow information as a field.
+ * Template for displaying workflow information as a block.
  *
  * Available variables:
  * - workflow: The workflow list entity.
- * - node: The node entity.
+ * - node: The node entity (optional).
  */
 #}
 <div class="workflow-info-block">
@@ -20,66 +20,33 @@
       </div>
     {% endif %}
 
-    {% set assigned_users = workflow.getAssignedUsers() %}
-    {% if assigned_users is not empty %}
-      <div class="workflow-info-section">
-        <strong>{{ 'Assigned Users:'|t }}</strong>
-        <ul class="workflow-info-list">
-          {% for uid in assigned_users %}
-            {% set user = drupal_entity('user', uid) %}
-            {% if user %}
-              <li>{{ user.getDisplayName() }}</li>
-            {% endif %}
-          {% endfor %}
-        </ul>
+    {% set assignment = workflow.getAssignment() %}
+    {% if assignment.type and assignment.id %}
+      <div class="workflow-info-section workflow-info-section--assigned">
+        <strong>{{ 'Assigned To:'|t }}</strong>
+        {% set class_map = {
+          'user': 'assigned-user',
+          'group': 'assigned-group',
+          'destination': 'assigned-destination'
+        } %}
+        {% set type_labels = {
+          'user': 'User'|t,
+          'group': 'Group'|t,
+          'destination': 'Destination'|t
+        } %}
+        <div class="assigned-entity {{ class_map[assignment.type]|default('') }}">
+          <span class="assignment-type">{{ type_labels[assignment.type]|default(assignment.type) }}:</span>
+          {{ workflow.getAssignedLabel() }}
+        </div>
       </div>
     {% endif %}
 
-    {% set assigned_groups = workflow.getAssignedGroups() %}
-    {% if assigned_groups is not empty %}
-      <div class="workflow-info-section">
-        <strong>{{ 'Assigned Groups:'|t }}</strong>
-        <ul class="workflow-info-list">
-          {% for gid in assigned_groups %}
-            {% set group = drupal_entity('group', gid) %}
-            {% if group %}
-              <li>{{ group.label }}</li>
-            {% endif %}
-          {% endfor %}
-        </ul>
-      </div>
-    {% endif %}
-
-    {% set resource_tags = workflow.getResourceTags() %}
-    {% if resource_tags is not empty %}
-      <div class="workflow-info-section">
-        <strong>{{ 'Resource Locations:'|t }}</strong>
-        <ul class="workflow-info-list">
-          {% for tid in resource_tags %}
-            {% set term = drupal_entity('taxonomy_term', tid) %}
-            {% if term %}
-              <li>{{ term.name }}</li>
-            {% endif %}
-          {% endfor %}
-        </ul>
-      </div>
-    {% endif %}
-
-    {% set destination_tags = workflow.getDestinationTags() %}
-    {% if destination_tags is not empty %}
-      <div class="workflow-info-section workflow-info-section--destinations">
-        <strong>{{ 'Destination Locations:'|t }}</strong>
-        <ul class="workflow-info-list workflow-info-list--destinations">
-          {% for tid in destination_tags %}
-            {% set term = drupal_entity('taxonomy_term', tid) %}
-            {% if term %}
-              <li class="destination-badge destination-badge--{{ term.name|lower }}">
-                <span class="destination-icon">📍</span>
-                {{ term.name }}
-              </li>
-            {% endif %}
-          {% endfor %}
-        </ul>
+    {% if workflow.comments %}
+      <div class="workflow-info-section workflow-info-section--comments">
+        <strong>{{ 'Comments:'|t }}</strong>
+        <div class="workflow-comments">
+          {{ workflow.comments }}
+        </div>
       </div>
     {% endif %}
   </div>

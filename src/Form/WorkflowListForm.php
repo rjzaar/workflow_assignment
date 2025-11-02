@@ -84,7 +84,21 @@ class WorkflowListForm extends EntityForm {
       '#description' => $this->t('Optional description of this workflow.'),
     ];
 
-    // Users selection.
+    // Assignment type selection
+    $form['assignment_type'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Assignment Type'),
+      '#options' => [
+        'user' => $this->t('User'),
+        'group' => $this->t('Group'),
+        'destination' => $this->t('Destination Location'),
+      ],
+      '#default_value' => $workflow->getAssignedType() ?: 'user',
+      '#required' => TRUE,
+      '#description' => $this->t('Select what type of entity this workflow should be assigned to.'),
+    ];
+
+    // User selection
     $user_storage = $this->entityTypeManager->getStorage('user');
     $user_options = [];
     $users = $user_storage->loadMultiple();
@@ -94,17 +108,23 @@ class WorkflowListForm extends EntityForm {
       }
     }
 
-    $form['assigned_users'] = [
+    $form['assigned_user'] = [
       '#type' => 'select',
-      '#title' => $this->t('Assigned Users'),
+      '#title' => $this->t('Assigned User'),
       '#options' => $user_options,
-      '#default_value' => $workflow->getAssignedUsers(),
-      '#multiple' => TRUE,
-      '#size' => 10,
-      '#description' => $this->t('Select users to assign to this workflow.'),
+      '#default_value' => $workflow->getAssignedType() == 'user' ? $workflow->getAssignedId() : '',
+      '#states' => [
+        'visible' => [
+          ':input[name="assignment_type"]' => ['value' => 'user'],
+        ],
+        'required' => [
+          ':input[name="assignment_type"]' => ['value' => 'user'],
+        ],
+      ],
+      '#description' => $this->t('Select the user to assign to this workflow.'),
     ];
 
-    // Groups selection (if Group module is available).
+    // Group selection (if Group module is available)
     if ($this->moduleHandler->moduleExists('group')) {
       $group_storage = $this->entityTypeManager->getStorage('group');
       $group_options = [];
@@ -113,41 +133,29 @@ class WorkflowListForm extends EntityForm {
         $group_options[$gid] = $group->label();
       }
 
-      $form['assigned_groups'] = [
+      $form['assigned_group'] = [
         '#type' => 'select',
-        '#title' => $this->t('Assigned Groups'),
+        '#title' => $this->t('Assigned Group'),
         '#options' => $group_options,
-        '#default_value' => $workflow->getAssignedGroups(),
-        '#multiple' => TRUE,
-        '#size' => 10,
-        '#description' => $this->t('Select groups to assign to this workflow.'),
+        '#default_value' => $workflow->getAssignedType() == 'group' ? $workflow->getAssignedId() : '',
+        '#states' => [
+          'visible' => [
+            ':input[name="assignment_type"]' => ['value' => 'group'],
+          ],
+          'required' => [
+            ':input[name="assignment_type"]' => ['value' => 'group'],
+          ],
+        ],
+        '#description' => $this->t('Select the group to assign to this workflow.'),
       ];
     }
-
-    // Resource location tags.
-    $config = $this->config('workflow_assignment.settings');
-    $resource_vocab = $config->get('resource_vocabulary') ?: 'resource_locations';
-    
-    $resource_terms = $this->entityTypeManager
-      ->getStorage('taxonomy_term')
-      ->loadTree($resource_vocab);
-    
-    $resource_options = [];
-    foreach ($resource_terms as $term) {
-      $resource_options[$term->tid] = $term->name;
+    else {
+      // Hide group option if module not available
+      unset($form['assignment_type']['#options']['group']);
     }
 
-    $form['resource_tags'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Resource Location Tags'),
-      '#options' => $resource_options,
-      '#default_value' => $workflow->getResourceTags(),
-      '#multiple' => TRUE,
-      '#size' => 8,
-      '#description' => $this->t('Tag this workflow with resource locations.'),
-    ];
-
-    // Destination location tags - NEW FEATURE.
+    // Destination location selection
+    $config = $this->config('workflow_assignment.settings');
     $destination_vocab = $config->get('destination_vocabulary') ?: 'destination_locations';
     
     $destination_terms = $this->entityTypeManager
@@ -159,14 +167,29 @@ class WorkflowListForm extends EntityForm {
       $destination_options[$term->tid] = $term->name;
     }
 
-    $form['destination_tags'] = [
+    $form['assigned_destination'] = [
       '#type' => 'select',
-      '#title' => $this->t('Destination Locations'),
+      '#title' => $this->t('Assigned Destination Location'),
       '#options' => $destination_options,
-      '#default_value' => $workflow->getDestinationTags(),
-      '#multiple' => TRUE,
-      '#size' => 8,
-      '#description' => $this->t('Select destination locations for this workflow (e.g., Public, Private).'),
+      '#default_value' => $workflow->getAssignedType() == 'destination' ? $workflow->getAssignedId() : '',
+      '#states' => [
+        'visible' => [
+          ':input[name="assignment_type"]' => ['value' => 'destination'],
+        ],
+        'required' => [
+          ':input[name="assignment_type"]' => ['value' => 'destination'],
+        ],
+      ],
+      '#description' => $this->t('Select the destination location to assign to this workflow.'),
+    ];
+
+    // Comments field
+    $form['comments'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Comments'),
+      '#default_value' => $workflow->getComments(),
+      '#description' => $this->t('Optional comments or notes about this workflow.'),
+      '#rows' => 3,
     ];
 
     return $form;
@@ -175,16 +198,59 @@ class WorkflowListForm extends EntityForm {
   /**
    * {@inheritdoc}
    */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    parent::validateForm($form, $form_state);
+
+    $assignment_type = $form_state->getValue('assignment_type');
+    
+    // Validate that an assignment is selected based on type
+    switch ($assignment_type) {
+      case 'user':
+        if (empty($form_state->getValue('assigned_user'))) {
+          $form_state->setErrorByName('assigned_user', $this->t('Please select a user.'));
+        }
+        break;
+      
+      case 'group':
+        if ($this->moduleHandler->moduleExists('group') && empty($form_state->getValue('assigned_group'))) {
+          $form_state->setErrorByName('assigned_group', $this->t('Please select a group.'));
+        }
+        break;
+      
+      case 'destination':
+        if (empty($form_state->getValue('assigned_destination'))) {
+          $form_state->setErrorByName('assigned_destination', $this->t('Please select a destination location.'));
+        }
+        break;
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function save(array $form, FormStateInterface $form_state) {
     $workflow = $this->entity;
     
-    // Set values from form.
-    $workflow->setAssignedUsers($form_state->getValue('assigned_users'));
-    if ($this->moduleHandler->moduleExists('group')) {
-      $workflow->setAssignedGroups($form_state->getValue('assigned_groups'));
+    // Set assignment based on type
+    $assignment_type = $form_state->getValue('assignment_type');
+    $workflow->setAssignedType($assignment_type);
+    
+    switch ($assignment_type) {
+      case 'user':
+        $workflow->setAssignedId($form_state->getValue('assigned_user'));
+        break;
+      
+      case 'group':
+        $workflow->setAssignedId($form_state->getValue('assigned_group'));
+        break;
+      
+      case 'destination':
+        $workflow->setAssignedId($form_state->getValue('assigned_destination'));
+        break;
     }
-    $workflow->setResourceTags($form_state->getValue('resource_tags'));
-    $workflow->setDestinationTags($form_state->getValue('destination_tags'));
+    
+    // Set comments
+    $workflow->setComments($form_state->getValue('comments'));
     
     $status = $workflow->save();
 

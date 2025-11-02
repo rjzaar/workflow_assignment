@@ -69,7 +69,18 @@ class NodeAssignWorkflowForm extends FormBase {
     
     $workflow_options = [];
     foreach ($workflows as $workflow) {
-      $workflow_options[$workflow->id()] = $workflow->label();
+      $assigned = $workflow->getAssignedLabel();
+      $type = $workflow->getAssignedType();
+      
+      $type_labels = [
+        'user' => $this->t('User'),
+        'group' => $this->t('Group'),
+        'destination' => $this->t('Dest'),
+      ];
+      
+      $type_label = isset($type_labels[$type]) ? $type_labels[$type] : $type;
+      
+      $workflow_options[$workflow->id()] = $workflow->label() . ' (' . $type_label . ': ' . $assigned . ')';
     }
 
     // Get currently assigned workflows.

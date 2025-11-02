@@ -18,14 +18,14 @@ function workflow_assignment_help($route_name, RouteMatchInterface $route_match)
   switch ($route_name) {
     case 'help.page.workflow_assignment':
       $output = '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The Workflow Assignment module provides a flexible workflow system where you can create workflow lists with assigned users, groups, and destination locations.') . '</p>';
+      $output .= '<p>' . t('The Workflow Assignment module provides a flexible workflow system where each workflow can be assigned to a single user, group, or destination location.') . '</p>';
       $output .= '<h3>' . t('Features') . '</h3>';
       $output .= '<ul>';
-      $output .= '<li>' . t('Create custom workflow lists with users and groups') . '</li>';
-      $output .= '<li>' . t('Tag workflows with resource and destination locations') . '</li>';
-      $output .= '<li>' . t('Separate Workflow tab on content pages for easy management') . '</li>';
-      $output .= '<li>' . t('Default destination locations: Public and Private') . '</li>';
-      $output .= '<li>' . t('Assign workflows to content on-the-fly') . '</li>';
+      $output .= '<li>' . t('Single assignment per workflow (user, group, or destination)') . '</li>';
+      $output .= '<li>' . t('Color-coded assignments: Green for users, Blue for groups, Orange for destinations') . '</li>';
+      $output .= '<li>' . t('Expandable description and comments fields') . '</li>';
+      $output .= '<li>' . t('Separate Workflow tab on content pages') . '</li>';
+      $output .= '<li>' . t('Quick edit functionality') . '</li>';
       $output .= '</ul>';
       return $output;
   }

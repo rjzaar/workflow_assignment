@@ -25,79 +25,165 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.workflow-field {
-  margin-bottom: 15px;
-  padding: 10px;
-  border-left: 3px solid #0074bd;
+/* Workflow Assignments Table */
+.workflow-assignments-table {
+  width: 100%;
+  margin: 20px 0;
+  border-collapse: collapse;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.workflow-assignments-table thead {
+  background: #0074bd;
+  color: #fff;
+}
+
+.workflow-assignments-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #005a8d;
+}
+
+.workflow-assignments-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+  vertical-align: top;
+  position: relative;
+}
+
+.workflow-assignments-table tr:hover {
   background: #f5f5f5;
 }
 
-.workflow-field:last-child {
-  margin-bottom: 0;
+.workflow-assignments-table tr:last-child td {
+  border-bottom: none;
 }
 
-.workflow-field strong {
-  display: block;
-  margin-bottom: 8px;
-  color: #0074bd;
+/* Assigned Entity Color Coding */
+.assigned-entity {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-weight: 600;
   font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
-.workflow-list {
-  list-style: none;
-  padding-left: 0;
-  margin: 0;
+/* Green for User */
+.assigned-user {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
 }
 
-.workflow-list li {
-  padding: 6px 12px;
-  margin-bottom: 5px;
-  background: #fff;
+/* Blue for Group */
+.assigned-group {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+/* Orange for Destination */
+.assigned-destination {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+/* Expandable Cell Styles */
+.expandable-cell {
+  cursor: pointer;
+  position: relative;
+  min-height: 24px;
+}
+
+.expandable-cell .cell-content {
+  display: block;
+  transition: all 0.3s ease;
+}
+
+.expandable-cell.expanded .cell-content {
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 400px;
+}
+
+.expandable-cell:not(.expanded) .cell-content {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+/* Edit mode for expandable cells */
+.expandable-cell.editing {
+  padding: 0;
+}
+
+.expandable-cell textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px;
+  border: 2px solid #0074bd;
   border-radius: 3px;
-  border: 1px solid #ddd;
+  font-family: inherit;
+  font-size: inherit;
+  resize: vertical;
 }
 
-.workflow-list li:last-child {
-  margin-bottom: 0;
-}
-
-/* Special styling for destination locations */
-.workflow-field--destinations {
-  border-left-color: #28a745;
-}
-
-.workflow-field--destinations strong {
-  color: #28a745;
-}
-
-.workflow-list--destinations li {
-  background: #e8f5e9;
-  border-color: #c8e6c9;
-  font-weight: 500;
-}
-
-.destination-tag {
+.expandable-cell .edit-actions {
+  margin-top: 5px;
   display: flex;
-  align-items: center;
+  gap: 5px;
 }
 
-.destination-icon {
-  margin-right: 8px;
-  font-size: 16px;
+.expandable-cell .edit-actions button {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 3px;
+  border: 1px solid #ccc;
+  cursor: pointer;
 }
 
-.destination-tag--public {
-  background: #e3f2fd !important;
-  border-color: #90caf9 !important;
-  color: #1976d2;
+.expandable-cell .edit-actions .save-btn {
+  background: #28a745;
+  color: white;
+  border-color: #28a745;
 }
 
-.destination-tag--private {
-  background: #fce4ec !important;
-  border-color: #f48fb1 !important;
-  color: #c2185b;
+.expandable-cell .edit-actions .cancel-btn {
+  background: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+/* Visual indicator for expandable cells */
+.description-cell .expandable-cell:hover,
+.comments-cell .expandable-cell:hover {
+  background: #f0f8ff;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.expandable-cell::after {
+  content: '⬇';
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: #999;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.expandable-cell:hover::after {
+  opacity: 1;
+}
+
+.expandable-cell.expanded::after {
+  content: '⬆';
 }
 
 /* Button styling */
@@ -126,165 +212,47 @@
   margin-bottom: 20px;
 }
 
-/* Workflow Info Block - Field Formatter Display */
-.workflow-info-block {
-  margin: 15px 0;
-  padding: 15px;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
+.no-workflow-message p {
+  margin: 0;
+  color: #856404;
 }
 
-.workflow-info-header h4 {
-  margin: 0 0 10px 0;
-  color: #0074bd;
-  font-size: 16px;
-  border-bottom: 2px solid #0074bd;
-  padding-bottom: 5px;
-}
-
-.workflow-info-description {
-  margin-bottom: 10px;
-  padding: 8px;
-  background: #fff;
-  border-left: 3px solid #6c757d;
-  font-style: italic;
-  color: #6c757d;
-}
-
-.workflow-info-section {
-  margin-bottom: 10px;
-  padding: 8px;
-  background: #fff;
+/* Workflow field display */
+.workflow-field {
+  margin-bottom: 15px;
+  padding: 10px;
   border-left: 3px solid #0074bd;
+  background: #f5f5f5;
 }
 
-.workflow-info-section:last-child {
+.workflow-field:last-child {
   margin-bottom: 0;
 }
 
-.workflow-info-section strong {
+.workflow-field strong {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   color: #0074bd;
-  font-size: 13px;
+  font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.workflow-info-list {
+/* List styles */
+.workflow-list {
   list-style: none;
   padding-left: 0;
   margin: 0;
 }
 
-.workflow-info-list li {
-  padding: 4px 8px;
-  margin-bottom: 3px;
-  background: #f8f9fa;
-  border-radius: 2px;
-}
-
-.workflow-info-list li:last-child {
-  margin-bottom: 0;
-}
-
-/* Destination badges in field formatter */
-.workflow-info-section--destinations {
-  border-left-color: #28a745;
-}
-
-.workflow-info-section--destinations strong {
-  color: #28a745;
-}
-
-.workflow-info-list--destinations li {
-  display: inline-block;
-  margin-right: 5px;
+.workflow-list li {
+  padding: 6px 12px;
   margin-bottom: 5px;
-}
-
-.destination-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.destination-badge .destination-icon {
-  margin-right: 5px;
-}
-
-.destination-badge--public {
-  background: #e3f2fd;
-  border: 1px solid #90caf9;
-  color: #1976d2;
-}
-
-.destination-badge--private {
-  background: #fce4ec;
-  border: 1px solid #f48fb1;
-  color: #c2185b;
-}
-
-/* Workflow Assignments Table */
-.workflow-assignments-table {
-  width: 100%;
-  margin: 20px 0;
-  border-collapse: collapse;
   background: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  border: 1px solid #ddd;
 }
 
-.workflow-assignments-table thead {
-  background: #0074bd;
-  color: #fff;
-}
-
-.workflow-assignments-table th {
-  padding: 12px;
-  text-align: left;
-  font-weight: 600;
-  border-bottom: 2px solid #005a8d;
-}
-
-.workflow-assignments-table td {
-  padding: 12px;
-  border-bottom: 1px solid #e0e0e0;
-  vertical-align: top;
-}
-
-.workflow-assignments-table tr:hover {
-  background: #f5f5f5;
-}
-
-.workflow-assignments-table tr:last-child td {
-  border-bottom: none;
-}
-
-/* Destination badges in table */
-.workflow-assignments-table .destination-badge {
-  display: inline-block;
-  padding: 3px 8px;
-  margin: 2px;
-  border-radius: 10px;
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-/* No workflow message styling */
-.no-workflow-message {
-  padding: 20px;
-  background: #fff3cd;
-  border: 1px solid #ffc107;
-  border-radius: 4px;
-  margin: 20px 0;
-  text-align: center;
-}
-
-.no-workflow-message p {
-  margin: 0;
-  color: #856404;
+.workflow-list li:last-child {
+  margin-bottom: 0;
 }

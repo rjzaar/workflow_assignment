@@ -85,15 +85,6 @@ class WorkflowAssignmentSettingsForm extends ConfigFormBase {
       $vocab_options[$vid] = $vocabulary->label();
     }
 
-    $form['resource_vocabulary'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Resource Location Vocabulary'),
-      '#options' => $vocab_options,
-      '#default_value' => $config->get('resource_vocabulary') ?: 'resource_locations',
-      '#description' => $this->t('Select the taxonomy vocabulary to use for resource locations.'),
-      '#required' => TRUE,
-    ];
-
     $form['destination_vocabulary'] = [
       '#type' => 'select',
       '#title' => $this->t('Destination Location Vocabulary'),
@@ -121,7 +112,6 @@ class WorkflowAssignmentSettingsForm extends ConfigFormBase {
     
     $this->config('workflow_assignment.settings')
       ->set('enabled_content_types', array_values($enabled_types))
-      ->set('resource_vocabulary', $form_state->getValue('resource_vocabulary'))
       ->set('destination_vocabulary', $form_state->getValue('destination_vocabulary'))
       ->set('show_workflow_tab', $form_state->getValue('show_workflow_tab'))
       ->save();

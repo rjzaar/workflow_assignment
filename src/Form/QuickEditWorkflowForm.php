@@ -72,7 +72,28 @@ class QuickEditWorkflowForm extends FormBase {
       '#markup' => '<h2>' . $this->t('Quick Edit: @name', ['@name' => $workflow_list->label()]) . '</h2>',
     ];
 
-    // Users selection.
+    // Quick edit for description
+    $form['description'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Description'),
+      '#default_value' => $workflow_list->getDescription(),
+      '#rows' => 3,
+    ];
+
+    // Assignment type selection
+    $form['assignment_type'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Assignment Type'),
+      '#options' => [
+        'user' => $this->t('User'),
+        'group' => $this->t('Group'),
+        'destination' => $this->t('Destination Location'),
+      ],
+      '#default_value' => $workflow_list->getAssignedType() ?: 'user',
+      '#required' => TRUE,
+    ];
+
+    // User selection
     $user_storage = $this->entityTypeManager->getStorage('user');
     $user_options = [];
     $users = $user_storage->loadMultiple();
@@ -82,16 +103,22 @@ class QuickEditWorkflowForm extends FormBase {
       }
     }
 
-    $form['assigned_users'] = [
+    $form['assigned_user'] = [
       '#type' => 'select',
-      '#title' => $this->t('Assigned Users'),
+      '#title' => $this->t('Assigned User'),
       '#options' => $user_options,
-      '#default_value' => $workflow_list->getAssignedUsers(),
-      '#multiple' => TRUE,
-      '#size' => 10,
+      '#default_value' => $workflow_list->getAssignedType() == 'user' ? $workflow_list->getAssignedId() : '',
+      '#states' => [
+        'visible' => [
+          ':input[name="assignment_type"]' => ['value' => 'user'],
+        ],
+        'required' => [
+          ':input[name="assignment_type"]' => ['value' => 'user'],
+        ],
+      ],
     ];
 
-    // Groups (if available).
+    // Groups (if available)
     if ($this->moduleHandler->moduleExists('group')) {
       $group_storage = $this->entityTypeManager->getStorage('group');
       $group_options = [];
@@ -100,39 +127,27 @@ class QuickEditWorkflowForm extends FormBase {
         $group_options[$gid] = $group->label();
       }
 
-      $form['assigned_groups'] = [
+      $form['assigned_group'] = [
         '#type' => 'select',
-        '#title' => $this->t('Assigned Groups'),
+        '#title' => $this->t('Assigned Group'),
         '#options' => $group_options,
-        '#default_value' => $workflow_list->getAssignedGroups(),
-        '#multiple' => TRUE,
-        '#size' => 10,
+        '#default_value' => $workflow_list->getAssignedType() == 'group' ? $workflow_list->getAssignedId() : '',
+        '#states' => [
+          'visible' => [
+            ':input[name="assignment_type"]' => ['value' => 'group'],
+          ],
+          'required' => [
+            ':input[name="assignment_type"]' => ['value' => 'group'],
+          ],
+        ],
       ];
     }
-
-    // Resource tags.
-    $config = $this->config('workflow_assignment.settings');
-    $resource_vocab = $config->get('resource_vocabulary') ?: 'resource_locations';
-    
-    $resource_terms = $this->entityTypeManager
-      ->getStorage('taxonomy_term')
-      ->loadTree($resource_vocab);
-    
-    $resource_options = [];
-    foreach ($resource_terms as $term) {
-      $resource_options[$term->tid] = $term->name;
+    else {
+      unset($form['assignment_type']['#options']['group']);
     }
 
-    $form['resource_tags'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Resource Locations'),
-      '#options' => $resource_options,
-      '#default_value' => $workflow_list->getResourceTags(),
-      '#multiple' => TRUE,
-      '#size' => 6,
-    ];
-
-    // Destination tags.
+    // Destination locations
+    $config = $this->config('workflow_assignment.settings');
     $destination_vocab = $config->get('destination_vocabulary') ?: 'destination_locations';
     
     $destination_terms = $this->entityTypeManager
@@ -144,13 +159,27 @@ class QuickEditWorkflowForm extends FormBase {
       $destination_options[$term->tid] = $term->name;
     }
 
-    $form['destination_tags'] = [
+    $form['assigned_destination'] = [
       '#type' => 'select',
-      '#title' => $this->t('Destination Locations'),
+      '#title' => $this->t('Assigned Destination'),
       '#options' => $destination_options,
-      '#default_value' => $workflow_list->getDestinationTags(),
-      '#multiple' => TRUE,
-      '#size' => 6,
+      '#default_value' => $workflow_list->getAssignedType() == 'destination' ? $workflow_list->getAssignedId() : '',
+      '#states' => [
+        'visible' => [
+          ':input[name="assignment_type"]' => ['value' => 'destination'],
+        ],
+        'required' => [
+          ':input[name="assignment_type"]' => ['value' => 'destination'],
+        ],
+      ],
+    ];
+
+    // Comments
+    $form['comments'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Comments'),
+      '#default_value' => $workflow_list->getComments(),
+      '#rows' => 3,
     ];
 
     $form['actions'] = [
@@ -180,12 +209,29 @@ class QuickEditWorkflowForm extends FormBase {
     /** @var \Drupal\workflow_assignment\Entity\WorkflowList $workflow */
     $workflow = $form_state->get('workflow');
 
-    $workflow->setAssignedUsers($form_state->getValue('assigned_users'));
-    if ($this->moduleHandler->moduleExists('group')) {
-      $workflow->setAssignedGroups($form_state->getValue('assigned_groups'));
+    // Update description and comments
+    $workflow->setDescription($form_state->getValue('description'));
+    $workflow->setComments($form_state->getValue('comments'));
+    
+    // Set assignment based on type
+    $assignment_type = $form_state->getValue('assignment_type');
+    $workflow->setAssignedType($assignment_type);
+    
+    switch ($assignment_type) {
+      case 'user':
+        $workflow->setAssignedId($form_state->getValue('assigned_user'));
+        break;
+      
+      case 'group':
+        if ($this->moduleHandler->moduleExists('group')) {
+          $workflow->setAssignedId($form_state->getValue('assigned_group'));
+        }
+        break;
+      
+      case 'destination':
+        $workflow->setAssignedId($form_state->getValue('assigned_destination'));
+        break;
     }
-    $workflow->setResourceTags($form_state->getValue('resource_tags'));
-    $workflow->setDestinationTags($form_state->getValue('destination_tags'));
     
     $workflow->save();
 

@@ -12,17 +12,6 @@ use Drupal\taxonomy\Entity\Term;
  * Implements hook_install().
  */
 function workflow_assignment_install() {
-  // Create the resource_locations vocabulary if it doesn't exist.
-  $vocabulary = Vocabulary::load('resource_locations');
-  if (!$vocabulary) {
-    $vocabulary = Vocabulary::create([
-      'vid' => 'resource_locations',
-      'name' => 'Resource Locations',
-      'description' => 'Taxonomy vocabulary for workflow resource locations',
-    ]);
-    $vocabulary->save();
-  }
-
   // Create the destination_locations vocabulary.
   $dest_vocabulary = Vocabulary::load('destination_locations');
   if (!$dest_vocabulary) {
@@ -52,8 +41,8 @@ function workflow_assignment_install() {
   // Set default configuration.
   \Drupal::configFactory()->getEditable('workflow_assignment.settings')
     ->set('enabled_content_types', [])
-    ->set('resource_vocabulary', 'resource_locations')
     ->set('destination_vocabulary', 'destination_locations')
+    ->set('show_workflow_tab', TRUE)
     ->save();
 
   \Drupal::messenger()->addStatus(t('Workflow Assignment module installed successfully. Default destination locations (Public and Private) have been created.'));
@@ -75,54 +64,68 @@ function workflow_assignment_uninstall() {
   // Clean up configuration.
   \Drupal::configFactory()->getEditable('workflow_assignment.settings')->delete();
 
-  \Drupal::messenger()->addStatus(t('Workflow Assignment module uninstalled. Resource Locations and Destination Locations vocabularies have been preserved.'));
+  \Drupal::messenger()->addStatus(t('Workflow Assignment module uninstalled. Destination Locations vocabulary has been preserved.'));
 }
 
 /**
- * Add destination locations vocabulary and default terms.
+ * Update workflow entities to single assignment model.
  */
-function workflow_assignment_update_9001() {
-  // Create the destination_locations vocabulary.
-  $dest_vocabulary = Vocabulary::load('destination_locations');
-  if (!$dest_vocabulary) {
-    $dest_vocabulary = Vocabulary::create([
-      'vid' => 'destination_locations',
-      'name' => 'Destination Locations',
-      'description' => 'Taxonomy vocabulary for workflow destination locations',
-    ]);
-    $dest_vocabulary->save();
-  }
-
-  // Create default destination location terms.
-  $terms_to_create = [
-    'Public' => 'Public destination - accessible to all users',
-    'Private' => 'Private destination - restricted access',
-  ];
-
-  foreach ($terms_to_create as $name => $description) {
-    $existing_terms = \Drupal::entityTypeManager()
-      ->getStorage('taxonomy_term')
-      ->loadByProperties([
-        'vid' => 'destination_locations',
-        'name' => $name,
-      ]);
-
-    if (empty($existing_terms)) {
-      $term = Term::create([
-        'vid' => 'destination_locations',
-        'name' => $name,
-        'description' => ['value' => $description, 'format' => 'plain_text'],
-      ]);
-      $term->save();
+function workflow_assignment_update_9003() {
+  $workflow_storage = \Drupal::entityTypeManager()->getStorage('workflow_list');
+  $workflows = $workflow_storage->loadMultiple();
+  
+  foreach ($workflows as $workflow) {
+    $needs_update = FALSE;
+    
+    // Convert multiple assignments to single assignment
+    // Priority: user > group > destination
+    if (!empty($workflow->get('assigned_users'))) {
+      $users = $workflow->get('assigned_users');
+      if (!empty($users[0])) {
+        $workflow->set('assigned_type', 'user');
+        $workflow->set('assigned_id', $users[0]);
+        $needs_update = TRUE;
+      }
+    }
+    elseif (!empty($workflow->get('assigned_groups'))) {
+      $groups = $workflow->get('assigned_groups');
+      if (!empty($groups[0])) {
+        $workflow->set('assigned_type', 'group');
+        $workflow->set('assigned_id', $groups[0]);
+        $needs_update = TRUE;
+      }
+    }
+    elseif (!empty($workflow->get('destination_tags'))) {
+      $destinations = $workflow->get('destination_tags');
+      if (!empty($destinations[0])) {
+        $workflow->set('assigned_type', 'destination');
+        $workflow->set('assigned_id', $destinations[0]);
+        $needs_update = TRUE;
+      }
+    }
+    
+    // Add empty comments field
+    if (!$workflow->get('comments')) {
+      $workflow->set('comments', '');
+      $needs_update = TRUE;
+    }
+    
+    // Remove old fields
+    $workflow->set('assigned_users', NULL);
+    $workflow->set('assigned_groups', NULL);
+    $workflow->set('resource_tags', NULL);
+    $workflow->set('destination_tags', NULL);
+    
+    if ($needs_update) {
+      $workflow->save();
     }
   }
-
-  // Update configuration.
-  \Drupal::configFactory()->getEditable('workflow_assignment.settings')
-    ->set('destination_vocabulary', 'destination_locations')
-    ->save();
-
-  return t('Destination Locations vocabulary and default terms created successfully.');
+  
+  // Remove resource_vocabulary from settings
+  $config = \Drupal::configFactory()->getEditable('workflow_assignment.settings');
+  $config->clear('resource_vocabulary')->save();
+  
+  return t('Workflow entities updated to single assignment model.');
 }
 
 /**

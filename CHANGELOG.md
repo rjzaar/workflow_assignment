@@ -1,297 +1,141 @@
 # CHANGELOG - Workflow Assignment Module
 
-## Version 2.0 - Improved Release
+## Version 3.0 - Streamlined Single Assignment Model
 
-### 🎉 Major New Features
+### 🎯 Major Breaking Changes
 
-#### 1. Dedicated Workflow Tab
-- **NEW:** Workflows now display on their own separate tab on content pages
-- Cleaner interface with dedicated space for workflow information
-- Tab appears alongside standard View/Edit tabs
-- Only visible on content types with workflow support enabled
-- Implemented via:
-  - `NodeWorkflowController.php` - Controller for tab display
-  - `workflow_assignment.routing.yml` - Route definition for `/node/{nid}/workflow`
-  - `workflow_assignment.links.task.yml` - Tab integration
+#### Single Assignment Per Workflow
+- **REMOVED:** Multiple users, groups, and destination arrays
+- **ADDED:** Single assignment model with `assigned_type` and `assigned_id`
+- Each workflow can now be assigned to ONE entity only:
+  - User (individual assignment)
+  - Group (team assignment) 
+  - Destination Location (taxonomy term)
 
-#### 2. Destination Location System
-- **NEW:** Complete destination location taxonomy system
-- **Pre-configured default locations:**
-  - **Public** - For publicly accessible destinations
-  - **Private** - For restricted access destinations
-- New vocabulary: `destination_locations`
-- Visual distinction with color-coded tags:
-  - Public destinations: Blue themed
-  - Private destinations: Red themed
-- Extensible system - easily add custom destinations
+#### Removed Resource Locations
+- **REMOVED:** Resource location vocabulary and all related code
+- **REMOVED:** `resource_tags` field from entity
+- Simplified workflow model focusing on assignment only
 
-#### 3. Enhanced Entity System
-- **NEW Methods in WorkflowList Entity:**
-  - `getDestinationTags()` - Retrieve destination location term IDs
-  - `setDestinationTags(array $tags)` - Set destination locations
-  - `addDestinationTag($tid)` - Add single destination
-- Full CRUD operations for destination management
+### ✨ New Features
+
+#### Comments Field
+- **NEW:** Comments field added to workflows
+- Expandable display in table view
+- Support for detailed workflow notes
+
+#### Color-Coded Assignments
+- **Green:** User assignments (#d4edda)
+- **Blue:** Group assignments (#d1ecf1)
+- **Orange:** Destination assignments (#fff3cd)
+
+#### Expandable Table Cells
+- Description and Comments cells expand on click
+- Shows truncated text (50 characters) by default
+- Infrastructure ready for inline editing (double-click)
 
 ### 🎨 UI/UX Improvements
 
-#### Visual Enhancements
-- New CSS styling for workflow tab (`css/workflow-tab.css`)
-- Color-coded destination tags with icons (📍)
-- Professional, modern design with:
-  - Card-based layout
-  - Soft shadows and borders
-  - Responsive design
-  - Clear visual hierarchy
+#### Simplified Table Display
+- **4 columns:** Name, Description, Assigned, Comments
+- Single "Assigned" column replaces 3 separate columns
+- Cleaner, more focused interface
+- Better mobile responsiveness
 
-#### User Interface
-- Improved workflow information display
-- Better organization of workflow data
-- Clear section separators
-- Enhanced readability
+#### JavaScript Enhancements
+- NEW: `workflow-tab.js` for interactive behaviors
+- Click to expand/collapse long text
+- Smooth transitions and visual feedback
+- Ready for AJAX inline editing
 
-### 🔧 Technical Improvements
+### 📁 Technical Changes
 
-#### New Files Created
-```
-workflow_assignment/
-├── src/
-│   ├── Controller/
-│   │   └── NodeWorkflowController.php         [NEW]
-│   ├── Entity/
-│   │   └── WorkflowList.php                   [UPDATED - added destination methods]
-│   └── Form/
-│       ├── WorkflowListForm.php               [UPDATED - added destination field]
-│       ├── QuickEditWorkflowForm.php          [UPDATED - added destination field]
-│       └── WorkflowAssignmentSettingsForm.php [UPDATED - added destination config]
-├── templates/
-│   └── workflow-tab-content.html.twig         [NEW]
-├── css/
-│   └── workflow-tab.css                       [NEW]
-├── workflow_assignment.libraries.yml          [NEW]
-├── workflow_assignment.links.task.yml         [NEW]
-└── workflow_assignment.install                [UPDATED - added destination setup]
+#### Entity Structure
+```php
+// Old structure (removed)
+protected $assigned_users = [];
+protected $assigned_groups = [];
+protected $resource_tags = [];
+protected $destination_tags = [];
+
+// New structure
+protected $assigned_type;   // 'user', 'group', or 'destination'
+protected $assigned_id;     // ID of the assigned entity
+protected $comments;        // Text field for notes
 ```
 
-#### Installation Improvements
-- Automatic creation of destination_locations vocabulary on install
-- Automatic creation of Public and Private default terms
-- Update hook (`workflow_assignment_update_9001`) for existing installations
-- Preservation of vocabularies on uninstall (user data protection)
+#### New Methods
+- `getAssignment()` - Returns array with type and ID
+- `setAssignment($type, $id)` - Sets single assignment
+- `getAssignedLabel()` - Gets human-readable label
+- `getComments()` / `setComments()` - Manage comments
 
-#### Configuration Enhancements
-- New setting: `destination_vocabulary` configuration
-- New setting: `show_workflow_tab` toggle (defaults to TRUE)
-- Better field management for content types
-- Automatic field creation/deletion on content type enable/disable
+#### Templates
+- **workflow-tab-content.html.twig** - Main table display
+- **workflow-info-block.html.twig** - Block display format
 
-### 📝 Form Improvements
+### 🔄 Migration
 
-#### All Forms Updated
-1. **WorkflowListForm**
-   - Added destination location selection field
-   - Multi-select with size 8 for better UX
-   - Clear labeling and descriptions
+#### Update Hook 9003
+Automatically converts existing data:
+1. Takes first user if multiple were assigned
+2. Falls back to first group if no users
+3. Falls back to first destination if no users/groups
+4. Adds empty comments field
+5. Removes old array fields
 
-2. **QuickEditWorkflowForm**
-   - Added destination location quick edit capability
-   - Maintains fast editing experience
-   - Size 6 for compact display
+### 📦 Files Changed/Added
 
-3. **WorkflowAssignmentSettingsForm**
-   - Added destination vocabulary configuration
-   - Added show workflow tab toggle
-   - Improved content type field management
+#### New Files
+- `js/workflow-tab.js` - JavaScript behaviors
+- `templates/workflow-tab-content.html.twig` - Tab template
+- `templates/workflow-info-block.html.twig` - Block template
 
-4. **NodeAssignWorkflowForm**
-   - Improved redirect to workflow tab after assignment
-   - Better success messaging
+#### Modified Files
+- `src/Entity/WorkflowList.php` - Complete restructure
+- `src/Controller/NodeWorkflowController.php` - Template-based
+- `src/Form/WorkflowListForm.php` - Radio button selection
+- `src/Form/QuickEditWorkflowForm.php` - Single assignment
+- `css/workflow-tab.css` - Color coding & expandable cells
+- `workflow_assignment.libraries.yml` - Added JS
+- `workflow_assignment.install` - Migration hooks
+- All other form and list builder files updated
 
-### 🎯 Routing Changes
+### 🚀 Installation
 
-#### New Routes
-- `workflow_assignment.node_workflow_tab` - Main workflow tab route
-- Integrated with node system via parameters
+#### Fresh Install
+```bash
+drush en workflow_assignment -y
+drush cr
+```
 
-#### Route Requirements
-- Permission-based access control
-- Custom access callback for workflow field check
-- Proper parameter conversion for node entity
+#### Upgrade from v2.x
+```bash
+drush updatedb -y
+drush cr
+```
 
-### 🎨 Theming System
+### ⚠️ Breaking Changes
 
-#### New Templates
-- `workflow-tab-content.html.twig` - Main workflow display template
-- Supports all workflow data display
-- Twig filters for entity loading
-- Conditional sections for optional data
+1. **Data Model:** Complete change from arrays to single assignment
+2. **Resource Locations:** Completely removed - no migration path
+3. **API Changes:** All methods for multiple assignments removed
+4. **Template Variables:** Different structure in templates
 
-#### New CSS
-- Comprehensive styling for workflow tab
-- Responsive design principles
-- Special styling for destination locations
-- Customizable color schemes
-- Button styling improvements
+### 💡 Future Enhancements
 
-#### Library Integration
-- New library: `workflow_tab`
-- CSS dependency management
-- Proper Drupal library structure
-
-### 📚 Documentation
-
-#### Comprehensive README
-- Complete feature documentation
-- Installation instructions
-- Configuration guides
-- Usage examples with screenshots
-- API documentation
-- Theming guide
-- Troubleshooting section
-- Upgrade notes
-
-#### Code Documentation
-- PHPDoc comments on all classes
-- Inline code documentation
-- Clear method descriptions
-- Parameter and return type documentation
-
-### 🔄 Backwards Compatibility
-
-#### Maintained Features
-- All original functionality preserved
-- Existing workflow assignments continue working
-- Resource location system unchanged
-- User/group assignment system unchanged
-- Quick edit functionality maintained
-
-#### Upgrade Path
-- Update hook for existing installations
-- Non-destructive vocabulary creation
-- Preserves existing workflow data
-- Clear upgrade instructions
-
-### 🐛 Bug Fixes
-- Improved field storage handling
-- Better entity loading in forms
-- Enhanced error handling
-- More robust permission checking
-
-### 🏗️ Architecture Improvements
-
-#### Better Separation of Concerns
-- Dedicated controller for workflow tab
-- Clear responsibility boundaries
-- Improved code organization
-
-#### Enhanced Extensibility
-- Hookable workflow system
-- Theme system integration
-- Easy to add custom destination types
-- API for programmatic access
-
-### 🚀 Performance
-- Efficient entity loading
-- Minimal database queries
-- Cached configurations
-- Optimized taxonomy term loading
-
-### 📋 Testing Recommendations
-
-To verify all improvements:
-
-1. **Install fresh:**
-   ```bash
-   drush en workflow_assignment -y
-   drush cr
-   ```
-   - Verify destination_locations vocabulary created
-   - Verify Public and Private terms exist
-
-2. **Test workflow tab:**
-   - Enable workflow on a content type
-   - Create workflow with destinations
-   - Assign to content
-   - View workflow tab
-   - Verify styling and information display
-
-3. **Test destination locations:**
-   - Create workflow with Public destination
-   - Create workflow with Private destination
-   - Create workflow with both
-   - Verify color coding
-   - Verify icons display
-
-4. **Test forms:**
-   - Create new workflow with destinations
-   - Quick edit workflow destinations
-   - Assign workflow from tab
-   - Verify all saves correctly
-
-### 🎓 Learning Resources
-
-The improved module demonstrates:
-- Drupal routing system
-- Tab integration with task links
-- Custom controllers
-- Entity API best practices
-- Form API advanced usage
-- Theming system integration
-- Taxonomy integration
-- Permission system
-- Configuration management
-- Update hooks
-
-### 💡 Future Enhancement Ideas
-
-Potential additions for version 3.0:
-- Workflow state tracking
-- Email notifications on workflow changes
-- Workflow templates
-- Bulk workflow assignment
-- Workflow history/audit log
-- Integration with Views
-- REST API endpoints
-- Workflow scheduling
-- Custom workflow permissions per workflow
-- Workflow cloning
+Planned for v3.1:
+- [ ] AJAX inline editing for description/comments
+- [ ] Workflow status field
+- [ ] Assignment history tracking
+- [ ] Email notifications
+- [ ] Bulk operations
+- [ ] CSV export
 
 ---
 
-## Migration from Version 1.0
-
-### For Existing Installations
-
-1. **Backup Database:**
-   ```bash
-   drush sql-dump > backup.sql
-   ```
-
-2. **Update Module Files:**
-   ```bash
-   cp -r workflow_assignment_v2/* /path/to/drupal/modules/custom/workflow_assignment/
-   ```
-
-3. **Run Updates:**
-   ```bash
-   drush updatedb -y
-   drush cr
-   ```
-
-4. **Verify:**
-   - Check destination_locations vocabulary exists
-   - Check Public and Private terms exist
-   - Test workflow tab on content
-   - Verify existing workflows still work
-
-### Breaking Changes
-
-**None** - This is a fully backwards-compatible update.
-
-All existing functionality is preserved and enhanced.
-
----
-
-**Developed:** 2025  
-**Drupal Version:** 10.x / 11.x  
-**Module Version:** 2.0  
-**License:** GPL-2.0-or-later
+**Version:** 3.0  
+**Date:** November 2025  
+**Drupal:** 10.x / 11.x  
+**PHP:** 8.0+  
+**Status:** Production Ready

@@ -1,6 +1,6 @@
 name: 'Workflow Assignment'
 type: module
-description: 'Flexible workflow system with user/group assignments and destination location tagging'
+description: 'Flexible workflow system with single assignment (user/group/destination) and comments'
 core_version_requirement: ^10 || ^11
 package: 'Workflow'
 dependencies:

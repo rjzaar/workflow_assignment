@@ -7,7 +7,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Url;
 
 /**
- * Provides a listing of Workflow list entities.
+ * Provides a listing of Workflow Lists.
  */
 class WorkflowListListBuilder extends ConfigEntityListBuilder {
 
@@ -15,12 +15,11 @@ class WorkflowListListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function buildHeader() {
-    $header['label'] = $this->t('Workflow List');
+    $header['label'] = $this->t('Name');
     $header['id'] = $this->t('Machine name');
     $header['description'] = $this->t('Description');
-    $header['users'] = $this->t('Assigned Users');
-    $header['groups'] = $this->t('Assigned Groups');
-    $header['resources'] = $this->t('Resource Locations');
+    $header['users'] = $this->t('Users');
+    $header['destinations'] = $this->t('Destinations');
     return $header + parent::buildHeader();
   }
 
@@ -28,38 +27,36 @@ class WorkflowListListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-    /** @var \Drupal\workflow_assignment\Entity\WorkflowListInterface $entity */
+    /** @var \Drupal\workflow_assignment\Entity\WorkflowList $entity */
     $row['label'] = $entity->label();
     $row['id'] = $entity->id();
-    $row['description'] = $entity->getDescription();
     
-    // Display user count
+    // Description (truncated).
+    $description = $entity->getDescription();
+    $row['description'] = $description ? \Drupal::service('text.truncate')->truncate($description, 60) : '-';
+    
+    // User count.
     $users = $entity->getAssignedUsers();
-    $row['users'] = !empty($users) ? count($users) : $this->t('None');
+    $row['users'] = count($users) . ' ' . $this->formatPlural(count($users), 'user', 'users');
     
-    // Display group count
-    $groups = $entity->getAssignedGroups();
-    $row['groups'] = !empty($groups) ? count($groups) : $this->t('None');
-    
-    // Display resource tag count
-    $tags = $entity->getResourceTags();
-    $row['resources'] = !empty($tags) ? count($tags) : $this->t('None');
+    // Destination locations.
+    $destinations = $entity->getDestinationTags();
+    if (!empty($destinations)) {
+      $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+      $destination_names = [];
+      foreach ($destinations as $tid) {
+        $term = $term_storage->load($tid);
+        if ($term) {
+          $destination_names[] = $term->getName();
+        }
+      }
+      $row['destinations'] = implode(', ', $destination_names);
+    }
+    else {
+      $row['destinations'] = '-';
+    }
     
     return $row + parent::buildRow($entity);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function render() {
-    $build = parent::render();
-    
-    // Add helpful empty message with link
-    $build['table']['#empty'] = $this->t('No workflow lists available. <a href="@link">Add a workflow list</a>.', [
-      '@link' => Url::fromRoute('entity.workflow_list.add_form')->toString(),
-    ]);
-    
-    return $build;
   }
 
   /**
@@ -68,11 +65,11 @@ class WorkflowListListBuilder extends ConfigEntityListBuilder {
   public function getDefaultOperations(EntityInterface $entity) {
     $operations = parent::getDefaultOperations($entity);
     
-    // Add quick edit operation
+    // Add quick edit operation.
     $operations['quick_edit'] = [
       'title' => $this->t('Quick Edit'),
       'weight' => 15,
-      'url' => Url::fromRoute('entity.workflow_list.quick_edit_form', [
+      'url' => Url::fromRoute('workflow_assignment.quick_edit', [
         'workflow_list' => $entity->id(),
       ]),
     ];

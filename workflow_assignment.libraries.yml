@@ -1,4 +1,7 @@
-workflow_info:
+workflow_tab:
+  version: 1.0
   css:
     theme:
-      css/workflow_assignment.css: {}
+      css/workflow-tab.css: {}
+  dependencies:
+    - core/drupal

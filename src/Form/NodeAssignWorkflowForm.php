@@ -4,12 +4,12 @@ namespace Drupal\workflow_assignment\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\node\NodeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\node\NodeInterface;
 
 /**
- * Form for assigning workflow to content.
+ * Form for assigning workflows to nodes.
  */
 class NodeAssignWorkflowForm extends FormBase {
 
@@ -43,7 +43,7 @@ class NodeAssignWorkflowForm extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'workflow_assignment_node_assign_form';
+    return 'workflow_assignment_node_assign';
   }
 
   /**
@@ -56,26 +56,54 @@ class NodeAssignWorkflowForm extends FormBase {
 
     $form_state->set('node', $node);
 
-    // Get current workflow assignment
-    $current_workflow = NULL;
-    if ($node->hasField('field_workflow_list') && !$node->get('field_workflow_list')->isEmpty()) {
-      $current_workflow = $node->get('field_workflow_list')->target_id;
+    $form['info'] = [
+      '#markup' => '<p>' . $this->t('Manage workflows for: <strong>@title</strong>', [
+        '@title' => $node->getTitle(),
+      ]) . '</p>',
+    ];
+
+    // Get all workflow lists.
+    $workflow_storage = $this->entityTypeManager->getStorage('workflow_list');
+    $workflows = $workflow_storage->loadMultiple();
+    
+    $workflow_options = [];
+    foreach ($workflows as $workflow) {
+      $workflow_options[$workflow->id()] = $workflow->label();
+    }
+
+    // Get currently assigned workflows.
+    $current_workflows = [];
+    if ($node->hasField('field_workflow_list')) {
+      foreach ($node->get('field_workflow_list') as $item) {
+        if (!empty($item->value)) {
+          $current_workflows[] = $item->value;
+        }
+      }
     }
 
     $form['workflow_list'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Workflow List'),
-      '#options' => $this->getWorkflowOptions(),
-      '#default_value' => $current_workflow,
-      '#empty_option' => $this->t('- None -'),
-      '#description' => $this->t('Select a workflow list to assign to this content.'),
+      '#type' => 'checkboxes',
+      '#title' => $this->t('Assigned Workflows'),
+      '#options' => $workflow_options,
+      '#default_value' => $current_workflows,
+      '#description' => $this->t('Select one or more workflows to assign to this content. Uncheck to remove workflows.'),
     ];
 
-    $form['actions']['#type'] = 'actions';
+    $form['actions'] = [
+      '#type' => 'actions',
+    ];
+
     $form['actions']['submit'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Assign Workflow'),
+      '#value' => $this->t('Save'),
       '#button_type' => 'primary',
+    ];
+
+    $form['actions']['cancel'] = [
+      '#type' => 'link',
+      '#title' => $this->t('Cancel'),
+      '#url' => Url::fromRoute('workflow_assignment.node_workflow_tab', ['node' => $node->id()]),
+      '#attributes' => ['class' => ['button']],
     ];
 
     return $form;
@@ -87,40 +115,30 @@ class NodeAssignWorkflowForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     /** @var \Drupal\node\NodeInterface $node */
     $node = $form_state->get('node');
-    $workflow_id = $form_state->getValue('workflow_list');
+    $selected_workflows = array_filter($form_state->getValue('workflow_list'));
 
     if ($node->hasField('field_workflow_list')) {
-      $node->set('field_workflow_list', $workflow_id);
+      // Clear existing workflows and set new ones
+      $node->set('field_workflow_list', array_values($selected_workflows));
       $node->save();
 
-      if ($workflow_id) {
-        $this->messenger()->addStatus($this->t('Workflow has been assigned to this content.'));
+      $count = count($selected_workflows);
+      if ($count > 0) {
+        $this->messenger()->addStatus($this->formatPlural(
+          $count,
+          'Successfully assigned 1 workflow to this content.',
+          'Successfully assigned @count workflows to this content.'
+        ));
       }
       else {
-        $this->messenger()->addStatus($this->t('Workflow has been removed from this content.'));
+        $this->messenger()->addStatus($this->t('All workflows have been removed from this content.'));
       }
     }
 
-    $form_state->setRedirectUrl($node->toUrl());
-  }
-
-  /**
-   * Get workflow list options.
-   *
-   * @return array
-   *   Array of workflow list options.
-   */
-  protected function getWorkflowOptions() {
-    $options = [];
-    $workflows = $this->entityTypeManager
-      ->getStorage('workflow_list')
-      ->loadMultiple();
-
-    foreach ($workflows as $workflow) {
-      $options[$workflow->id()] = $workflow->label();
-    }
-
-    return $options;
+    // Redirect to the workflow tab.
+    $form_state->setRedirect('workflow_assignment.node_workflow_tab', [
+      'node' => $node->id(),
+    ]);
   }
 
 }

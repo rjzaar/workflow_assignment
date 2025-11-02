@@ -6,12 +6,12 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 
 /**
- * Defines the Workflow list entity.
+ * Defines the Workflow List entity.
  *
  * @ConfigEntityType(
  *   id = "workflow_list",
- *   label = @Translation("Workflow list"),
- *   label_collection = @Translation("Workflow lists"),
+ *   label = @Translation("Workflow List"),
+ *   label_collection = @Translation("Workflow Lists"),
  *   label_singular = @Translation("workflow list"),
  *   label_plural = @Translation("workflow lists"),
  *   label_count = @PluralTranslation(
@@ -19,30 +19,25 @@ use Drupal\Core\Entity\EntityStorageInterface;
  *     plural = "@count workflow lists",
  *   ),
  *   handlers = {
- *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
  *     "list_builder" = "Drupal\workflow_assignment\WorkflowListListBuilder",
  *     "form" = {
  *       "add" = "Drupal\workflow_assignment\Form\WorkflowListForm",
  *       "edit" = "Drupal\workflow_assignment\Form\WorkflowListForm",
  *       "delete" = "Drupal\Core\Entity\EntityDeleteForm"
- *     },
- *     "route_provider" = {
- *       "html" = "Drupal\Core\Entity\Routing\AdminHtmlRouteProvider",
- *     },
+ *     }
  *   },
  *   config_prefix = "workflow_list",
  *   admin_permission = "administer workflow lists",
- *   links = {
- *     "canonical" = "/admin/structure/workflow-list/{workflow_list}",
- *     "add-form" = "/admin/structure/workflow-list/add",
- *     "edit-form" = "/admin/structure/workflow-list/{workflow_list}/edit",
- *     "delete-form" = "/admin/structure/workflow-list/{workflow_list}/delete",
- *     "collection" = "/admin/structure/workflow-list"
- *   },
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "label",
  *     "uuid" = "uuid"
+ *   },
+ *   links = {
+ *     "collection" = "/admin/structure/workflow-list",
+ *     "add-form" = "/admin/structure/workflow-list/add",
+ *     "edit-form" = "/admin/structure/workflow-list/{workflow_list}/edit",
+ *     "delete-form" = "/admin/structure/workflow-list/{workflow_list}/delete"
  *   },
  *   config_export = {
  *     "id",
@@ -51,54 +46,62 @@ use Drupal\Core\Entity\EntityStorageInterface;
  *     "assigned_users",
  *     "assigned_groups",
  *     "resource_tags",
+ *     "destination_tags",
  *     "created",
- *     "changed",
+ *     "changed"
  *   }
  * )
  */
-class WorkflowList extends ConfigEntityBase implements WorkflowListInterface {
+class WorkflowList extends ConfigEntityBase {
 
   /**
-   * The Workflow list ID.
+   * The workflow list ID.
    *
    * @var string
    */
   protected $id;
 
   /**
-   * The Workflow list label.
+   * The workflow list label.
    *
    * @var string
    */
   protected $label;
 
   /**
-   * The Workflow list description.
+   * The workflow list description.
    *
    * @var string
    */
   protected $description;
 
   /**
-   * The assigned users.
+   * Array of assigned user IDs.
    *
    * @var array
    */
   protected $assigned_users = [];
 
   /**
-   * The assigned groups.
+   * Array of assigned group IDs.
    *
    * @var array
    */
   protected $assigned_groups = [];
 
   /**
-   * The resource location tags.
+   * Array of resource location term IDs.
    *
    * @var array
    */
   protected $resource_tags = [];
+
+  /**
+   * Array of destination location term IDs.
+   *
+   * @var array
+   */
+  protected $destination_tags = [];
 
   /**
    * The creation timestamp.
@@ -108,7 +111,7 @@ class WorkflowList extends ConfigEntityBase implements WorkflowListInterface {
   protected $created;
 
   /**
-   * The last changed timestamp.
+   * The last modified timestamp.
    *
    * @var int
    */
@@ -117,12 +120,33 @@ class WorkflowList extends ConfigEntityBase implements WorkflowListInterface {
   /**
    * {@inheritdoc}
    */
+  public function preSave(EntityStorageInterface $storage) {
+    parent::preSave($storage);
+    
+    $this->changed = \Drupal::time()->getRequestTime();
+    
+    if ($this->isNew()) {
+      $this->created = \Drupal::time()->getRequestTime();
+    }
+  }
+
+  /**
+   * Gets the description.
+   *
+   * @return string
+   *   The description.
+   */
   public function getDescription() {
     return $this->description;
   }
 
   /**
-   * {@inheritdoc}
+   * Sets the description.
+   *
+   * @param string $description
+   *   The description.
+   *
+   * @return $this
    */
   public function setDescription($description) {
     $this->description = $description;
@@ -130,140 +154,213 @@ class WorkflowList extends ConfigEntityBase implements WorkflowListInterface {
   }
 
   /**
-   * {@inheritdoc}
+   * Gets assigned users.
+   *
+   * @return array
+   *   Array of user IDs.
    */
   public function getAssignedUsers() {
-    return $this->assigned_users ?? [];
+    return $this->assigned_users ?: [];
   }
 
   /**
-   * {@inheritdoc}
+   * Sets assigned users.
+   *
+   * @param array $users
+   *   Array of user IDs.
+   *
+   * @return $this
    */
   public function setAssignedUsers(array $users) {
-    $this->assigned_users = $users;
+    $this->assigned_users = array_values(array_unique(array_filter($users)));
     return $this;
   }
 
   /**
-   * {@inheritdoc}
+   * Adds a user to the workflow.
+   *
+   * @param int $uid
+   *   The user ID.
+   *
+   * @return $this
    */
-  public function addAssignedUser($user_id) {
-    if (!in_array($user_id, $this->assigned_users)) {
-      $this->assigned_users[] = $user_id;
+  public function addAssignedUser($uid) {
+    $users = $this->getAssignedUsers();
+    if (!in_array($uid, $users)) {
+      $users[] = $uid;
+      $this->setAssignedUsers($users);
     }
     return $this;
   }
 
   /**
-   * {@inheritdoc}
+   * Removes a user from the workflow.
+   *
+   * @param int $uid
+   *   The user ID.
+   *
+   * @return $this
    */
-  public function removeAssignedUser($user_id) {
-    $key = array_search($user_id, $this->assigned_users);
-    if ($key !== FALSE) {
-      unset($this->assigned_users[$key]);
-      $this->assigned_users = array_values($this->assigned_users);
-    }
+  public function removeAssignedUser($uid) {
+    $users = $this->getAssignedUsers();
+    $users = array_diff($users, [$uid]);
+    $this->setAssignedUsers($users);
     return $this;
   }
 
   /**
-   * {@inheritdoc}
+   * Gets assigned groups.
+   *
+   * @return array
+   *   Array of group IDs.
    */
   public function getAssignedGroups() {
-    return $this->assigned_groups ?? [];
+    return $this->assigned_groups ?: [];
   }
 
   /**
-   * {@inheritdoc}
+   * Sets assigned groups.
+   *
+   * @param array $groups
+   *   Array of group IDs.
+   *
+   * @return $this
    */
   public function setAssignedGroups(array $groups) {
-    $this->assigned_groups = $groups;
+    $this->assigned_groups = array_values(array_unique(array_filter($groups)));
     return $this;
   }
 
   /**
-   * {@inheritdoc}
+   * Adds a group to the workflow.
+   *
+   * @param int $gid
+   *   The group ID.
+   *
+   * @return $this
    */
-  public function addAssignedGroup($group_id) {
-    if (!in_array($group_id, $this->assigned_groups)) {
-      $this->assigned_groups[] = $group_id;
+  public function addAssignedGroup($gid) {
+    $groups = $this->getAssignedGroups();
+    if (!in_array($gid, $groups)) {
+      $groups[] = $gid;
+      $this->setAssignedGroups($groups);
     }
     return $this;
   }
 
   /**
-   * {@inheritdoc}
+   * Removes a group from the workflow.
+   *
+   * @param int $gid
+   *   The group ID.
+   *
+   * @return $this
    */
-  public function removeAssignedGroup($group_id) {
-    $key = array_search($group_id, $this->assigned_groups);
-    if ($key !== FALSE) {
-      unset($this->assigned_groups[$key]);
-      $this->assigned_groups = array_values($this->assigned_groups);
-    }
+  public function removeAssignedGroup($gid) {
+    $groups = $this->getAssignedGroups();
+    $groups = array_diff($groups, [$gid]);
+    $this->setAssignedGroups($groups);
     return $this;
   }
 
   /**
-   * {@inheritdoc}
+   * Gets resource tags.
+   *
+   * @return array
+   *   Array of term IDs.
    */
   public function getResourceTags() {
-    return $this->resource_tags ?? [];
+    return $this->resource_tags ?: [];
   }
 
   /**
-   * {@inheritdoc}
+   * Sets resource tags.
+   *
+   * @param array $tags
+   *   Array of term IDs.
+   *
+   * @return $this
    */
   public function setResourceTags(array $tags) {
-    $this->resource_tags = $tags;
+    $this->resource_tags = array_values(array_unique(array_filter($tags)));
     return $this;
   }
 
   /**
-   * {@inheritdoc}
+   * Adds a resource tag.
+   *
+   * @param int $tid
+   *   The term ID.
+   *
+   * @return $this
    */
-  public function addResourceTag($tag_id) {
-    if (!in_array($tag_id, $this->resource_tags)) {
-      $this->resource_tags[] = $tag_id;
+  public function addResourceTag($tid) {
+    $tags = $this->getResourceTags();
+    if (!in_array($tid, $tags)) {
+      $tags[] = $tid;
+      $this->setResourceTags($tags);
     }
     return $this;
   }
 
   /**
-   * {@inheritdoc}
+   * Gets destination tags.
+   *
+   * @return array
+   *   Array of destination term IDs.
    */
-  public function removeResourceTag($tag_id) {
-    $key = array_search($tag_id, $this->resource_tags);
-    if ($key !== FALSE) {
-      unset($this->resource_tags[$key]);
-      $this->resource_tags = array_values($this->resource_tags);
+  public function getDestinationTags() {
+    return $this->destination_tags ?: [];
+  }
+
+  /**
+   * Sets destination tags.
+   *
+   * @param array $tags
+   *   Array of destination term IDs.
+   *
+   * @return $this
+   */
+  public function setDestinationTags(array $tags) {
+    $this->destination_tags = array_values(array_unique(array_filter($tags)));
+    return $this;
+  }
+
+  /**
+   * Adds a destination tag.
+   *
+   * @param int $tid
+   *   The term ID.
+   *
+   * @return $this
+   */
+  public function addDestinationTag($tid) {
+    $tags = $this->getDestinationTags();
+    if (!in_array($tid, $tags)) {
+      $tags[] = $tid;
+      $this->setDestinationTags($tags);
     }
     return $this;
   }
 
   /**
-   * {@inheritdoc}
+   * Gets the creation timestamp.
+   *
+   * @return int
+   *   The creation timestamp.
    */
   public function getCreatedTime() {
     return $this->created;
   }
 
   /**
-   * {@inheritdoc}
+   * Gets the last modified timestamp.
+   *
+   * @return int
+   *   The last modified timestamp.
    */
   public function getChangedTime() {
     return $this->changed;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function preSave(EntityStorageInterface $storage) {
-    parent::preSave($storage);
-    
-    if ($this->isNew()) {
-      $this->created = \Drupal::time()->getRequestTime();
-    }
-    $this->changed = \Drupal::time()->getRequestTime();
   }
 
 }

@@ -1,9 +1,10 @@
-name: Workflow Assignment
+name: 'Workflow Assignment'
 type: module
-description: 'Flexible workflow system with user/group assignments and resource location tagging.'
+description: 'Flexible workflow system with user/group assignments and destination location tagging'
 core_version_requirement: ^10 || ^11
-package: Workflow
+package: 'Workflow'
 dependencies:
   - drupal:node
   - drupal:taxonomy
   - drupal:user
+configure: workflow_assignment.settings

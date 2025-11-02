@@ -186,7 +186,7 @@ class WorkflowAssignmentSettingsForm extends ConfigFormBase {
           }
           
           $form_display->setComponent('field_workflow_list', [
-            'type' => 'options_buttons',  // Use checkboxes for entity reference
+            'type' => 'workflow_list_widget',  // Use custom widget
             'weight' => 100,
             'settings' => [],
           ])->save();

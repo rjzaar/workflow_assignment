@@ -15,6 +15,31 @@ class WorkflowListListBuilder extends ConfigEntityListBuilder {
   /**
    * {@inheritdoc}
    */
+  public function render() {
+    $build = parent::render();
+    
+    // Add the "Add Workflow List" button at the top of the page.
+    $build['table']['#empty'] = $this->t('No workflow lists available. <a href=":add-url">Add a workflow list</a>.', [
+      ':add-url' => Url::fromRoute('entity.workflow_list.add_form')->toString(),
+    ]);
+    
+    // Add action links at the top of the page.
+    $build['add_link'] = [
+      '#type' => 'link',
+      '#title' => $this->t('Add Workflow List'),
+      '#url' => Url::fromRoute('entity.workflow_list.add_form'),
+      '#attributes' => [
+        'class' => ['button', 'button--action', 'button--primary'],
+      ],
+      '#weight' => -10,
+    ];
+    
+    return $build;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function buildHeader() {
     $header['label'] = $this->t('Name');
     $header['id'] = $this->t('Machine name');

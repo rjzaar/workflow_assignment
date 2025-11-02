@@ -7,6 +7,7 @@ use Drupal\Core\Url;
 use Drupal\node\NodeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 
 /**
  * Controller for the workflow tab on nodes.
@@ -21,13 +22,23 @@ class NodeWorkflowController extends ControllerBase {
   protected $entityTypeManager;
 
   /**
+   * The module handler.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  /**
    * Constructs a NodeWorkflowController object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *   The module handler.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager) {
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, ModuleHandlerInterface $module_handler) {
     $this->entityTypeManager = $entity_type_manager;
+    $this->moduleHandler = $module_handler;
   }
 
   /**
@@ -35,7 +46,8 @@ class NodeWorkflowController extends ControllerBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity_type.manager')
+      $container->get('entity_type.manager'),
+      $container->get('module_handler')
     );
   }
 
@@ -165,9 +177,9 @@ class NodeWorkflowController extends ControllerBase {
       $row[] = '-';
     }
 
-    // Assigned groups
+    // Assigned groups - check if group module exists
     $groups = $workflow->getAssignedGroups();
-    if (!empty($groups)) {
+    if (!empty($groups) && $this->moduleHandler->moduleExists('group')) {
       $group_storage = $this->entityTypeManager->getStorage('group');
       $group_names = [];
       foreach ($groups as $gid) {

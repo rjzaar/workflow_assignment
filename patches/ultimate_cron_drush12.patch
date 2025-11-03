@@ -1,0 +1,16 @@
+diff --git a/src/Commands/UltimateCronCommands.php b/src/Commands/UltimateCronCommands.php
+index 1234567..abcdefg 100644
+--- a/src/Commands/UltimateCronCommands.php
++++ b/src/Commands/UltimateCronCommands.php
+@@ -48,10 +48,6 @@ class UltimateCronCommands extends DrushCommands {
+    * {@inheritdoc}
+    */
+   public function logger() {
+-    if (!isset($this->logger)) {
+-      $this->logger = new \Drupal\ultimate_cron\Logger\LoggerDrush();
+-    }
+-    return $this->logger;
++    return $this->loggerManager->getLogger();
+   }
+ 
+ }

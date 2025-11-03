@@ -197,36 +197,3 @@ function workflow_assignment_update_9002() {
   
   return t('Workflow field storage not found.');
 }
-
-/**
- * Fix workflow field widgets to use select lists instead of checkboxes.
- */
-function workflow_assignment_update_9005() {
-  $entity_form_display_storage = \Drupal::entityTypeManager()
-    ->getStorage('entity_form_display');
-  
-  $updated = 0;
-  
-  // Get all form displays
-  $form_displays = $entity_form_display_storage->loadMultiple();
-  
-  foreach ($form_displays as $form_display) {
-    if ($component = $form_display->getComponent('field_workflow_list')) {
-      // Check if using problematic widget type
-      if (in_array($component['type'], ['options_buttons', 'workflow_list_widget', 'entity_reference_checkboxes'])) {
-        // Change to select widget
-        $form_display->setComponent('field_workflow_list', [
-          'type' => 'options_select',
-          'weight' => $component['weight'] ?? 100,
-          'settings' => [],
-          'third_party_settings' => $component['third_party_settings'] ?? [],
-        ])->save();
-        $updated++;
-      }
-    }
-  }
-  
-  return t('Updated @count workflow field widgets to use select lists instead of checkboxes.', [
-    '@count' => $updated,
-  ]);
-}

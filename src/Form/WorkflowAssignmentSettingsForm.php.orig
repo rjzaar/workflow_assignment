@@ -186,8 +186,7 @@ class WorkflowAssignmentSettingsForm extends ConfigFormBase {
           }
           
           $form_display->setComponent('field_workflow_list', [
-            // Use options_select to avoid checkbox zero value issues
-            'type' => 'options_select',
+            'type' => 'workflow_list_widget',  // Use custom widget
             'weight' => 100,
             'settings' => [],
           ])->save();

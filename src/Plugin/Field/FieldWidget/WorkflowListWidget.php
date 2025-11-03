@@ -86,22 +86,75 @@ class WorkflowListWidget extends OptionsButtonsWidget {
       '</em></div>' .
       '</div>';
     
+    // Add element validation to filter out zeros before field validation
+    $element['#element_validate'][] = [get_class($this), 'validateElement'];
+    
     return $element;
+  }
+
+  /**
+   * Element validation callback to filter out zero values.
+   *
+   * @param array $element
+   *   The form element.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   * @param array $form
+   *   The complete form.
+   */
+  public static function validateElement(array &$element, FormStateInterface $form_state, array &$form) {
+    $values = $form_state->getValue($element['#parents']);
+    
+    if (is_array($values)) {
+      $filtered = [];
+      
+      foreach ($values as $delta => $value) {
+        // Skip non-numeric deltas
+        if (!is_numeric($delta)) {
+          continue;
+        }
+        
+        // Extract the actual value
+        $target_id = NULL;
+        if (is_array($value) && isset($value['target_id'])) {
+          $target_id = $value['target_id'];
+        }
+        elseif (is_scalar($value)) {
+          $target_id = $value;
+        }
+        
+        // Only keep non-zero values
+        if (!empty($target_id) && $target_id !== 0 && $target_id !== '0') {
+          $filtered[] = ['target_id' => $target_id];
+        }
+      }
+      
+      // Update the form state with filtered values
+      $form_state->setValueForElement($element, $filtered);
+    }
   }
 
   /**
    * {@inheritdoc}
    */
   public function massageFormValues(array $values, array $form, FormStateInterface $form_state) {
-    // Filter out unchecked checkboxes (value = 0)
-    // Checkboxes return 0 for unchecked, but entity reference fields
-    // expect only valid entity IDs or NULL
+    // Additional filtering as a safety net
     $filtered = [];
     
     foreach ($values as $value) {
-      // Check if target_id exists and is not 0 or empty
-      if (isset($value['target_id']) && $value['target_id'] !== 0 && $value['target_id'] !== '0' && !empty($value['target_id'])) {
-        $filtered[] = $value;
+      // Extract target_id from various possible structures
+      $target_id = NULL;
+      
+      if (is_array($value) && isset($value['target_id'])) {
+        $target_id = $value['target_id'];
+      }
+      elseif (is_scalar($value)) {
+        $target_id = $value;
+      }
+      
+      // Only keep valid entity IDs (not 0, '0', empty, etc.)
+      if (!empty($target_id) && $target_id !== 0 && $target_id !== '0') {
+        $filtered[] = ['target_id' => $target_id];
       }
     }
     

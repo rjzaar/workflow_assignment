@@ -177,38 +177,3 @@ function workflow_assignment_node_form_validate(&$form, FormStateInterface $form
     $form_state->setValue('field_workflow_list', $filtered);
   }
 }
-
-/**
- * Implements hook_field_widget_multivalue_form_alter().
- * 
- * Fixes the "submitted value 0" error that occurs when using checkboxes
- * for entity reference fields by filtering out unchecked values (zeros).
- */
-function workflow_assignment_field_widget_multivalue_form_alter(array &$elements, FormStateInterface $form_state, array $context) {
-  // Only process the workflow list field
-  if ($context['items']->getName() == 'field_workflow_list') {
-    // Add validation to filter out zeros before entity reference validation
-    array_unshift($elements['#element_validate'], 'workflow_assignment_clean_checkbox_values');
-  }
-}
-
-/**
- * Validation callback to clean checkbox values.
- * 
- * Removes zeros from checkbox submissions before entity reference validation
- * to prevent "submitted value 0" errors.
- */
-function workflow_assignment_clean_checkbox_values(&$element, FormStateInterface $form_state) {
-  $values = $form_state->getValue($element['#parents']);
-  
-  if (is_array($values)) {
-    $cleaned = [];
-    foreach ($values as $key => $value) {
-      // Only keep non-zero values (checked checkboxes)
-      if ($value !== 0 && $value !== '0' && !empty($value)) {
-        $cleaned[] = ['target_id' => $value];
-      }
-    }
-    $form_state->setValueForElement($element, $cleaned);
-  }
-}

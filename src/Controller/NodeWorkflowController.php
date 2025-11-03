@@ -65,14 +65,50 @@ class NodeWorkflowController extends ControllerBase {
     $workflows = [];
     if ($node->hasField('field_workflow_list')) {
       $field_items = $node->get('field_workflow_list');
+      
+      // Debug: Check if field has values
+      \Drupal::logger('workflow_assignment')->debug('Field items count: @count', [
+        '@count' => count($field_items),
+      ]);
+      
       foreach ($field_items as $item) {
-        // For entity reference field, get the target entity
-        $workflow = $item->entity;
-        if ($workflow) {
-          $workflows[] = $workflow;
+        // FIXED: For config entities, we need to load manually using target_id
+        // because $item->entity doesn't always work reliably for config entities
+        $workflow_id = $item->target_id;
+        
+        // Debug: Log the workflow ID
+        \Drupal::logger('workflow_assignment')->debug('Processing workflow ID: @id', [
+          '@id' => $workflow_id,
+        ]);
+        
+        if ($workflow_id) {
+          $workflow = $this->entityTypeManager
+            ->getStorage('workflow_list')
+            ->load($workflow_id);
+          
+          if ($workflow) {
+            \Drupal::logger('workflow_assignment')->debug('Loaded workflow: @label', [
+              '@label' => $workflow->label(),
+            ]);
+            $workflows[] = $workflow;
+          }
+          else {
+            \Drupal::logger('workflow_assignment')->warning('Could not load workflow with ID: @id', [
+              '@id' => $workflow_id,
+            ]);
+          }
         }
       }
     }
+    else {
+      \Drupal::logger('workflow_assignment')->warning('Node @nid does not have field_workflow_list field', [
+        '@nid' => $node->id(),
+      ]);
+    }
+
+    \Drupal::logger('workflow_assignment')->debug('Total workflows loaded: @count', [
+      '@count' => count($workflows),
+    ]);
 
     $can_edit = $this->currentUser()->hasPermission('assign workflow lists to content');
 

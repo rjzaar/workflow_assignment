@@ -1,5 +1,5 @@
 {
-    "name": "drupal/workflow_assignment",
+    "name": "rjzaar/workflow_assignment",
     "description": "A custom Drupal 10/11 module that provides a flexible workflow system where you can create workflow lists containing assigned users and/or groups, with resource locations designated by taxonomy tags.",
     "type": "drupal-module",
     "license": "GPL-2.0-or-later",

@@ -2,15 +2,74 @@ diff --git a/src/Commands/UltimateCronCommands.php b/src/Commands/UltimateCronCo
 index 1234567..abcdefg 100644
 --- a/src/Commands/UltimateCronCommands.php
 +++ b/src/Commands/UltimateCronCommands.php
-@@ -48,10 +48,6 @@ class UltimateCronCommands extends DrushCommands {
-    * {@inheritdoc}
+@@ -2,6 +2,8 @@
+ 
+ namespace Drupal\ultimate_cron\Commands;
+ 
++use Drupal\Core\Logger\LoggerChannelFactoryInterface;
++use Drupal\Core\Logger\LoggerChannelInterface;
+ use Drupal\Core\Database\Connection;
+ use Drupal\Core\Entity\EntityTypeManagerInterface;
+ use Drupal\Core\Extension\ModuleHandlerInterface;
+@@ -37,6 +39,13 @@ class UltimateCronCommands extends DrushCommands {
+    */
+   protected $moduleHandler;
+ 
++  /**
++   * The logger channel factory.
++   *
++   * @var \Drupal\Core\Logger\LoggerChannelFactoryInterface
++   */
++  protected $loggerChannelFactory;
++
+   /**
+    * UltimateCronCommands constructor.
+    *
+@@ -46,13 +55,16 @@ class UltimateCronCommands extends DrushCommands {
+    *   Database connection.
+    * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
+    *   Module handler service.
++   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_channel_factory
++   *   The logger channel factory.
+    */
+-  public function __construct(EntityTypeManagerInterface $entity_type_manager, Connection $connection, ModuleHandlerInterface $moduleHandler) {
++  public function __construct(EntityTypeManagerInterface $entity_type_manager, Connection $connection, ModuleHandlerInterface $moduleHandler, LoggerChannelFactoryInterface $logger_channel_factory) {
+     parent::__construct();
+     $this->entityTypeManager = $entity_type_manager;
+     $this->connection = $connection;
+     $this->moduleHandler = $moduleHandler;
+     $this->cronJobManager = \Drupal::service('plugin.manager.ultimate_cron.job');
++    $this->loggerChannelFactory = $logger_channel_factory;
+   }
+ 
+   /**
+@@ -60,10 +72,11 @@ class UltimateCronCommands extends DrushCommands {
+    */
+   public static function create(ContainerInterface $container) {
+     return new static(
+-      $container->get('entity_type.manager'),
+-      $container->get('database'),
+-      $container->get('module_handler')
++        $container->get('entity_type.manager'),
++        $container->get('database'),
++        $container->get('module_handler'),
++        $container->get('logger.factory')
+     );
+   }
+ 
+   /**
+-   * {@inheritdoc}
++   * Get the logger channel.
++   *
++   * @return \Drupal\Core\Logger\LoggerChannelInterface
++   *   The logger channel.
     */
    public function logger() {
 -    if (!isset($this->logger)) {
 -      $this->logger = new \Drupal\ultimate_cron\Logger\LoggerDrush();
 -    }
 -    return $this->logger;
-+    return $this->loggerManager->getLogger();
++    return $this->loggerChannelFactory->get('ultimate_cron');
    }
  
- }
+   /**

@@ -1,72 +1,36 @@
-diff --git a/src/Commands/UltimateCronCommands.php b/src/Commands/UltimateCronCommands.php
-index 1234567..abcdefg 100644
---- a/src/Commands/UltimateCronCommands.php
-+++ b/src/Commands/UltimateCronCommands.php
-@@ -2,6 +2,8 @@
+--- ultimate_cron-8.x-2.0-alpha7/src/Commands/UltimateCronCommands.php	2024-02-04 09:07:58.000000000 +0000
++++ ultimate_cron-8.x-2.0-alpha7-patched/src/Commands/UltimateCronCommands.php	2025-11-04 10:45:08.428914320 +0000
+@@ -16,13 +16,21 @@
+ class UltimateCronCommands extends DrushCommands {
  
- namespace Drupal\ultimate_cron\Commands;
- 
-+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
-+use Drupal\Core\Logger\LoggerChannelInterface;
- use Drupal\Core\Database\Connection;
- use Drupal\Core\Entity\EntityTypeManagerInterface;
- use Drupal\Core\Extension\ModuleHandlerInterface;
-@@ -37,6 +39,13 @@ class UltimateCronCommands extends DrushCommands {
-    */
-   protected $moduleHandler;
- 
-+  /**
-+   * The logger channel factory.
+   /**
++   * The logger channel.
 +   *
-+   * @var \Drupal\Core\Logger\LoggerChannelFactoryInterface
++   * @var \Drupal\Core\Logger\LoggerChannelInterface
 +   */
-+  protected $loggerChannelFactory;
++  protected $ultimateCronLogger;
 +
-   /**
-    * UltimateCronCommands constructor.
++  /**
+    * Constructs an UltimateCronCommands object.
     *
-@@ -46,13 +55,16 @@ class UltimateCronCommands extends DrushCommands {
-    *   Database connection.
-    * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
-    *   Module handler service.
-+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_channel_factory
-+   *   The logger channel factory.
+-   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger
++   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $loggerFactory
+    *   Logger factory object.
     */
--  public function __construct(EntityTypeManagerInterface $entity_type_manager, Connection $connection, ModuleHandlerInterface $moduleHandler) {
-+  public function __construct(EntityTypeManagerInterface $entity_type_manager, Connection $connection, ModuleHandlerInterface $moduleHandler, LoggerChannelFactoryInterface $logger_channel_factory) {
-     parent::__construct();
-     $this->entityTypeManager = $entity_type_manager;
-     $this->connection = $connection;
-     $this->moduleHandler = $moduleHandler;
-     $this->cronJobManager = \Drupal::service('plugin.manager.ultimate_cron.job');
-+    $this->loggerChannelFactory = $logger_channel_factory;
+-  public function __construct(LoggerChannelFactoryInterface $logger) {
+-    $this->logger = $logger->get('ultimate_cron');
++  public function __construct(LoggerChannelFactoryInterface $loggerFactory) {
++    parent::__construct();
++    $this->ultimateCronLogger = $loggerFactory->get('ultimate_cron');
    }
  
    /**
-@@ -60,10 +72,11 @@ class UltimateCronCommands extends DrushCommands {
-    */
-   public static function create(ContainerInterface $container) {
-     return new static(
--      $container->get('entity_type.manager'),
--      $container->get('database'),
--      $container->get('module_handler')
-+      $container->get('entity_type.manager'),
-+      $container->get('database'),
-+      $container->get('module_handler'),
-+      $container->get('logger.factory')
-     );
-   }
- 
-@@ -72,9 +85,7 @@ class UltimateCronCommands extends DrushCommands {
-    * @return \Drupal\Core\Logger\LoggerChannelInterface
-    *   The logger channel.
-    */
-   public function logger() {
--    if (!isset($this->logger)) {
--      $this->logger = new \Drupal\ultimate_cron\Logger\LoggerDrush();
--    }
--    return $this->logger;
-+    return $this->loggerChannelFactory->get('ultimate_cron');
-   }
- 
-   /**
+@@ -404,7 +412,7 @@
+     if ($job->unlock($lock_id, TRUE)) {
+       $log_entry = $job->resumeLog($lock_id);
+       global $user;
+-      $this->logger->warning('@name manually unlocked by user @username (@uid)', [
++      $this->ultimateCronLogger->warning('@name manually unlocked by user @username (@uid)', [
+         '@name' => $job->id(),
+         '@username' => $user->getDisplayName(),
+         '@uid' => $user->id(),

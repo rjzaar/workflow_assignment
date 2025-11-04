@@ -50,19 +50,16 @@ index 1234567..abcdefg 100644
 -      $container->get('entity_type.manager'),
 -      $container->get('database'),
 -      $container->get('module_handler')
-+        $container->get('entity_type.manager'),
-+        $container->get('database'),
-+        $container->get('module_handler'),
-+        $container->get('logger.factory')
++      $container->get('entity_type.manager'),
++      $container->get('database'),
++      $container->get('module_handler'),
++      $container->get('logger.factory')
      );
    }
  
-   /**
--   * {@inheritdoc}
-+   * Get the logger channel.
-+   *
-+   * @return \Drupal\Core\Logger\LoggerChannelInterface
-+   *   The logger channel.
+@@ -72,9 +85,7 @@ class UltimateCronCommands extends DrushCommands {
+    * @return \Drupal\Core\Logger\LoggerChannelInterface
+    *   The logger channel.
     */
    public function logger() {
 -    if (!isset($this->logger)) {

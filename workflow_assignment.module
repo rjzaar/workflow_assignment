@@ -46,7 +46,7 @@ function workflow_assignment_theme() {
     ],
     'workflow_tab_content' => [
       'variables' => [
-        'workflow' => NULL,
+        'workflows' => [],   // ← Changed to plural and default to empty array
         'node' => NULL,
         'can_edit' => FALSE,
       ],

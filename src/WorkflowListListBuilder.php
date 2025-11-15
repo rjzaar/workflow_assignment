@@ -42,7 +42,6 @@ class WorkflowListListBuilder extends ConfigEntityListBuilder {
    */
   public function buildHeader() {
     $header['label'] = $this->t('Name');
-    $header['id'] = $this->t('Machine name');
     $header['description'] = $this->t('Description');
     $header['assigned'] = $this->t('Assigned');
     $header['comments'] = $this->t('Comments');
@@ -55,8 +54,7 @@ class WorkflowListListBuilder extends ConfigEntityListBuilder {
   public function buildRow(EntityInterface $entity) {
     /** @var \Drupal\workflow_assignment\Entity\WorkflowList $entity */
     $row['label'] = $entity->label();
-    $row['id'] = $entity->id();
-    
+
     // Description (truncated).
     $description = $entity->getDescription();
     $row['description'] = $description ? Unicode::truncate($description, 40, TRUE, TRUE) : '-';

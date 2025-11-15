@@ -21,6 +21,7 @@
             <th>{{ 'Description'|t }}</th>
             <th>{{ 'Assigned'|t }}</th>
             <th>{{ 'Comments'|t }}</th>
+            <th>{{ 'Actions'|t }}</th>
           </tr>
         </thead>
         <tbody>
@@ -64,6 +65,13 @@
                     {% endif %}
                   </span>
                 </div>
+              </td>
+              <td class="actions-cell">
+                {% if can_administer %}
+                  <a href="{{ path('workflow_assignment.quick_edit', {'workflow_list': workflow.id}) }}" class="button button--small">
+                    {{ 'Edit'|t }}
+                  </a>
+                {% endif %}
               </td>
             </tr>
           {% endfor %}

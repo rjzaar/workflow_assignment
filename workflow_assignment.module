@@ -49,6 +49,7 @@ function workflow_assignment_theme() {
         'workflows' => [],   // ← Changed to plural and default to empty array
         'node' => NULL,
         'can_edit' => FALSE,
+        'can_administer' => FALSE,
       ],
     ],
   ];

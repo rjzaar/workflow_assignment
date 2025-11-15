@@ -111,6 +111,7 @@ class NodeWorkflowController extends ControllerBase {
     ]);
 
     $can_edit = $this->currentUser()->hasPermission('assign workflow lists to content');
+    $can_administer = $this->currentUser()->hasPermission('administer workflow lists');
 
     // Render using template
     $build = [
@@ -118,6 +119,7 @@ class NodeWorkflowController extends ControllerBase {
       '#workflows' => $workflows,
       '#node' => $node,
       '#can_edit' => $can_edit,
+      '#can_administer' => $can_administer,
       '#attached' => [
         'library' => ['workflow_assignment/workflow_tab'],
       ],

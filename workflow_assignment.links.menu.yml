@@ -1,0 +1,5 @@
+workflow_assignment.settings:
+  title: 'Workflow Assignment'
+  description: 'Configure workflow assignment settings.'
+  route_name: workflow_assignment.settings
+  parent: system.admin_config_workflow
